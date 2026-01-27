@@ -28,6 +28,8 @@ export interface URLAnalysis {
   visual_analysis?: VisualAnalysisResult;
   // UTM tracking analysis
   utm_analysis?: UTMAnalysisResult;
+  // SEO/AEO/GEO/LLMO analysis
+  seo_analysis?: import('./seo').SEOAnalysisResult;
 }
 
 // robots.txt parsing result
@@ -76,6 +78,9 @@ export interface VisualAnalysisResult {
   blocked: boolean;
   blocked_at_step?: number;
   analysis_duration_ms: number;
+  // Fields for when visual analysis is disabled
+  disabled?: boolean;
+  disabled_reason?: string;
 }
 
 // UTM & Parameter Tracking
@@ -160,12 +165,14 @@ export interface AnalysisResult {
   rateLimitInfo?: RateLimitDetection;
   visualAnalysis?: VisualAnalysisResult;
   utmAnalysis?: UTMAnalysisResult;
+  seoAnalysis?: import('./seo').SEOAnalysisResult;
 }
 
 // API request/response types
 export interface AnalyzeRequest {
   url: string;
   visualAnalysis?: boolean;
+  seoAnalysis?: boolean;
 }
 
 export interface AnalyzeResponse {
@@ -226,7 +233,7 @@ export interface RateLimitInfo {
 
 // Component props types
 export interface URLInputProps {
-  onAnalyze: (url: string, options?: { visualAnalysis?: boolean }) => Promise<void>;
+  onAnalyze: (url: string, options?: { visualAnalysis?: boolean; seoAnalysis?: boolean }) => Promise<void>;
   loading: boolean;
   disabled?: boolean;
 }
@@ -266,3 +273,6 @@ export interface EnvConfig {
   nodeEnv: string;
   isProduction: boolean;
 }
+
+// Re-export SEO types
+export * from './seo';

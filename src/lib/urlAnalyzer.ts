@@ -140,6 +140,12 @@ export interface AnalyzerResult {
   rateLimitInfo?: RateLimitDetection;
   utmAnalysis?: UTMAnalysisResult;
   error?: string;
+  // Raw HTML content (only included when includeHtml option is true)
+  html?: string;
+}
+
+export interface AnalyzeOptions {
+  includeHtml?: boolean;
 }
 
 /**
@@ -271,7 +277,7 @@ export function detectBotProtections(
 /**
  * Main URL analyzer function
  */
-export async function analyzeUrl(inputUrl: string): Promise<AnalyzerResult> {
+export async function analyzeUrl(inputUrl: string, options?: AnalyzeOptions): Promise<AnalyzerResult> {
   const startTime = Date.now();
   const redirects: Redirect[] = [];
   let currentUrl = normalizeUrl(inputUrl);
@@ -350,6 +356,8 @@ export async function analyzeUrl(inputUrl: string): Promise<AnalyzerResult> {
       robotsTxt,
       rateLimitInfo,
       utmAnalysis,
+      // Only include HTML if requested (to save memory)
+      ...(options?.includeHtml && { html }),
     };
   } catch (error) {
     const responseTimeMs = Date.now() - startTime;

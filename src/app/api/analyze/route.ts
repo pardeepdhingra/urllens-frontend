@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { analyzeUrl, normalizeUrl } from '@/lib/urlAnalyzer';
 import { analyzeUrlVisually } from '@/lib/screenshotAnalyzer';
+import { analyzeSEO } from '@/lib/seoAnalyzer';
 import { calculateScore } from '@/lib/scoringEngine';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rateLimit';
 import type { AnalyzeRequest, AnalyzeResponse, URLAnalysis } from '@/types';
@@ -85,8 +86,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeRe
       );
     }
 
-    // 4. Analyze the URL
-    const analysisResult = await analyzeUrl(body.url);
+    // 4. Analyze the URL (include HTML if SEO analysis is requested)
+    const seoAnalysisRequested = (body as { seoAnalysis?: boolean }).seoAnalysis === true;
+    const analysisResult = await analyzeUrl(body.url, { includeHtml: seoAnalysisRequested });
 
     // 4.5 Run visual analysis if requested
     let visualAnalysisResult = null;
@@ -103,6 +105,30 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeRe
       } catch (visualError) {
         console.error('Visual analysis error:', visualError);
         // Visual analysis is optional - continue without it
+      }
+    }
+
+    // 4.6 Run SEO/AEO/GEO/LLMO analysis if requested
+    let seoAnalysisResult = null;
+    if (seoAnalysisRequested && analysisResult.html) {
+      try {
+        console.log('Starting SEO analysis for:', body.url);
+        seoAnalysisResult = await analyzeSEO(
+          analysisResult.finalUrl,
+          analysisResult.html,
+          analysisResult.responseTimeMs
+        );
+        console.log('SEO analysis complete:', {
+          seoScore: seoAnalysisResult.seo.score,
+          aeoScore: seoAnalysisResult.aeo.score,
+          geoScore: seoAnalysisResult.geo.score,
+          llmoScore: seoAnalysisResult.llmo.score,
+          recommendations: seoAnalysisResult.recommendations.length,
+          duration: seoAnalysisResult.analysisDurationMs,
+        });
+      } catch (seoError) {
+        console.error('SEO analysis error:', seoError);
+        // SEO analysis is optional - continue without it
       }
     }
 
@@ -126,6 +152,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeRe
       rate_limit_info: analysisResult.rateLimitInfo,
       utm_analysis: analysisResult.utmAnalysis,
       visual_analysis: visualAnalysisResult,
+      seo_analysis: seoAnalysisResult,
       score,
       recommendation,
       analyzed_at: new Date().toISOString(),

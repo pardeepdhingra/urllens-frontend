@@ -3,7 +3,9 @@
 // Visual analysis of URL redirects using Playwright
 // ============================================================================
 
-import { chromium, type Browser, type Page, type Response, type LaunchOptions } from 'playwright';
+// NOTE: Playwright is dynamically imported to avoid loading it when visual analysis is disabled
+// This is necessary for serverless deployments (like Vercel) where Playwright is not available
+import type { Browser, Page, Response, LaunchOptions } from 'playwright';
 import type { RedirectScreenshot, VisualAnalysisResult } from '@/types';
 import { existsSync } from 'fs';
 
@@ -193,6 +195,21 @@ export async function analyzeUrlVisually(
   inputUrl: string
 ): Promise<VisualAnalysisResult> {
   const startTime = Date.now();
+
+  // Check if visual analysis is disabled (e.g., on Vercel serverless)
+  if (process.env.DISABLE_VISUAL_ANALYSIS === 'true') {
+    console.log('Visual analysis is disabled via DISABLE_VISUAL_ANALYSIS env var');
+    return {
+      screenshots: [],
+      total_redirects: 0,
+      final_url: inputUrl,
+      blocked: false,
+      analysis_duration_ms: Date.now() - startTime,
+      disabled: true,
+      disabled_reason: 'Visual analysis is not available in this deployment environment.',
+    };
+  }
+
   const screenshots: RedirectScreenshot[] = [];
   let browser: Browser | null = null;
   let blocked = false;
@@ -202,6 +219,25 @@ export async function analyzeUrlVisually(
   const normalizedUrl = normalizeUrlForBrowser(inputUrl);
 
   try {
+    // Dynamically import Playwright to avoid loading it when not needed
+    // This is critical for serverless deployments where Playwright may not be available
+    let chromium;
+    try {
+      const playwright = await import('playwright');
+      chromium = playwright.chromium;
+    } catch (importError) {
+      console.warn('Playwright is not available in this environment:', importError);
+      return {
+        screenshots: [],
+        total_redirects: 0,
+        final_url: inputUrl,
+        blocked: false,
+        analysis_duration_ms: Date.now() - startTime,
+        disabled: true,
+        disabled_reason: 'Playwright browser automation is not available in this deployment environment.',
+      };
+    }
+
     // Try to find system Chrome if Playwright's chromium is not available
     const chromeExecutable = findChromeExecutable();
 

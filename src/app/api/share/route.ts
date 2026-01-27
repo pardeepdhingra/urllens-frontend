@@ -19,6 +19,24 @@ interface ShareResponse {
 }
 
 /**
+ * Get the base URL from request headers
+ * Works in any environment (localhost, Vercel, custom domain)
+ */
+function getBaseUrl(request: NextRequest): string {
+  // Check for environment variable first
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL;
+  }
+
+  // Fallback to request headers (works on Vercel and other platforms)
+  const host = request.headers.get('host');
+  const forwardedProto = request.headers.get('x-forwarded-proto');
+  const protocol = forwardedProto || (host?.includes('localhost') ? 'http' : 'https');
+
+  return `${protocol}://${host}`;
+}
+
+/**
  * POST /api/share
  * Creates a shareable link for an analysis
  */
@@ -85,7 +103,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ShareResp
 
     // 4. If already has share_id, return it
     if (analysis.share_id) {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const baseUrl = getBaseUrl(request);
       return NextResponse.json({
         success: true,
         share_id: analysis.share_id,
@@ -121,7 +139,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ShareResp
       );
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = getBaseUrl(request);
     return NextResponse.json({
       success: true,
       share_id: shareId,

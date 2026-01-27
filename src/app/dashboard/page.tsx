@@ -68,7 +68,7 @@ export default function DashboardPage() {
   }, [fetchHistory]);
 
   // Analyze URL
-  const handleAnalyze = async (url: string, options?: { visualAnalysis?: boolean }) => {
+  const handleAnalyze = async (url: string, options?: { visualAnalysis?: boolean; seoAnalysis?: boolean }) => {
     setLoading(true);
     setError(null);
     setResult(null);
@@ -80,7 +80,11 @@ export default function DashboardPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url, visualAnalysis: options?.visualAnalysis }),
+        body: JSON.stringify({
+          url,
+          visualAnalysis: options?.visualAnalysis,
+          seoAnalysis: options?.seoAnalysis,
+        }),
       });
 
       const data = await response.json();
@@ -111,6 +115,7 @@ export default function DashboardPage() {
         rateLimitInfo: data.data.rate_limit_info,
         visualAnalysis: data.data.visual_analysis,
         utmAnalysis: data.data.utm_analysis,
+        seoAnalysis: data.data.seo_analysis,
       };
 
       setResult(analysisResult);
@@ -161,6 +166,7 @@ export default function DashboardPage() {
       rateLimitInfo: analysis.rate_limit_info,
       visualAnalysis: analysis.visual_analysis,
       utmAnalysis: analysis.utm_analysis,
+      seoAnalysis: analysis.seo_analysis,
     };
 
     setResult(analysisResult);

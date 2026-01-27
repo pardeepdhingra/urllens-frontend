@@ -48,11 +48,12 @@ import {
   CameraAlt,
   Link as LinkIcon,
 } from '@mui/icons-material';
-import type { AnalysisResult, BotProtection, Redirect, RobotsTxtResult, RateLimitDetection, VisualAnalysisResult, UTMAnalysisResult } from '@/types';
+import type { AnalysisResult, BotProtection, Redirect, RobotsTxtResult, RateLimitDetection, VisualAnalysisResult, UTMAnalysisResult, SEOAnalysisResult } from '@/types';
 import { getScoreColor, getScoreLabel } from '@/lib/scoringEngine';
 import { analyzeHeaders, groupHeadersByCategory, type HeaderInfo } from '@/lib/headersInspector';
 import { RedirectTimeline } from './RedirectTimeline';
 import { UTMTrackingPanel } from './UTMTrackingPanel';
+import SEOAnalysisPanel from './SEOAnalysisPanel';
 
 interface EnhancedResultDisplayProps {
   result: AnalysisResult | null;
@@ -406,19 +407,22 @@ export function EnhancedResultDisplay({
   const enhancedResultForTabs = result as AnalysisResult & {
     visualAnalysis?: VisualAnalysisResult;
     utmAnalysis?: UTMAnalysisResult;
+    seoAnalysis?: SEOAnalysisResult;
   };
   const hasVisualAnalysis = !!enhancedResultForTabs?.visualAnalysis;
   const hasUtmAnalysis = !!enhancedResultForTabs?.utmAnalysis;
+  const hasSeoAnalysis = !!enhancedResultForTabs?.seoAnalysis;
 
-  // Tab indices: Headers=0, robots.txt=1, Rate Limits=2, UTM=3, Protections=4 (if exists), Visual Analysis=4 or 5
+  // Tab indices: Headers=0, robots.txt=1, Rate Limits=2, UTM=3, SEO=4 (if exists), Protections=5 (if exists), Visual Analysis=6
   // UTM tracking is always shown (index 3)
   const utmTabIndex = 3;
   let nextIndex = 4;
+  const seoAnalysisTabIndex = hasSeoAnalysis ? nextIndex++ : -1;
   const protectionsTabIndex = hasProtections ? nextIndex++ : -1;
   const visualAnalysisTabIndex = hasVisualAnalysis ? nextIndex++ : -1;
 
   // Get total number of tabs (Headers, robots.txt, Rate Limits, UTM + optional ones)
-  const totalTabs = 4 + (hasProtections ? 1 : 0) + (hasVisualAnalysis ? 1 : 0);
+  const totalTabs = 4 + (hasSeoAnalysis ? 1 : 0) + (hasProtections ? 1 : 0) + (hasVisualAnalysis ? 1 : 0);
 
   // Handle tab change - ensure value is within bounds
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
@@ -643,6 +647,9 @@ export function EnhancedResultDisplay({
               <Tab icon={<SmartToy />} label="robots.txt" iconPosition="start" />
               <Tab icon={<Timer />} label="Rate Limits" iconPosition="start" />
               <Tab icon={<LinkIcon />} label="UTM Tracking" iconPosition="start" />
+              {hasSeoAnalysis && (
+                <Tab icon={<Speed />} label="SEO Analysis" iconPosition="start" />
+              )}
               {hasProtections && (
                 <Tab icon={<Shield />} label="Protections" iconPosition="start" />
               )}
@@ -671,6 +678,12 @@ export function EnhancedResultDisplay({
           <TabPanel value={tabValue} index={utmTabIndex}>
             <UTMTrackingPanel utmAnalysis={enhancedResult.utmAnalysis} />
           </TabPanel>
+
+          {hasSeoAnalysis && (
+            <TabPanel value={tabValue} index={seoAnalysisTabIndex}>
+              <SEOAnalysisPanel analysis={enhancedResultForTabs.seoAnalysis!} />
+            </TabPanel>
+          )}
 
           {hasProtections && (
             <TabPanel value={tabValue} index={protectionsTabIndex}>
