@@ -11,8 +11,11 @@ import {
   Button,
   CircularProgress,
   InputAdornment,
+  FormControlLabel,
+  Checkbox,
+  Tooltip,
 } from '@mui/material';
-import { Search, Link as LinkIcon } from '@mui/icons-material';
+import { Search, Link as LinkIcon, CameraAlt } from '@mui/icons-material';
 import type { URLInputProps } from '@/types';
 
 export default function URLInput({
@@ -22,6 +25,7 @@ export default function URLInput({
 }: URLInputProps) {
   const [url, setUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [visualAnalysis, setVisualAnalysis] = useState(false);
 
   const validateUrl = (input: string): boolean => {
     if (!input.trim()) {
@@ -29,8 +33,8 @@ export default function URLInput({
       return false;
     }
 
-    // Basic URL validation
-    const urlPattern = /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/\S*)?$/i;
+    // Basic URL validation - supports paths, query params, and fragments
+    const urlPattern = /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(:[0-9]+)?(\/[^\s]*)?(\?[^\s]*)?$/i;
     if (!urlPattern.test(input.trim())) {
       setError('Please enter a valid URL');
       return false;
@@ -46,7 +50,7 @@ export default function URLInput({
     if (!validateUrl(url)) return;
 
     try {
-      await onAnalyze(url.trim());
+      await onAnalyze(url.trim(), { visualAnalysis });
     } catch {
       // Error handling is done in parent component
     }
@@ -60,61 +64,90 @@ export default function URLInput({
   };
 
   return (
-    <Box
-      component="form"
-      onSubmit={handleSubmit}
-      sx={{
-        display: 'flex',
-        gap: 2,
-        width: '100%',
-        flexDirection: { xs: 'column', sm: 'row' },
-      }}
-    >
-      <TextField
-        fullWidth
-        value={url}
-        onChange={(e) => {
-          setUrl(e.target.value);
-          if (error) setError(null);
-        }}
-        onKeyDown={handleKeyDown}
-        placeholder="Enter URL to analyze (e.g., https://example.com)"
-        disabled={loading || disabled}
-        error={!!error}
-        helperText={error}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <LinkIcon color={error ? 'error' : 'action'} />
-            </InputAdornment>
-          ),
-        }}
+    <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
+      <Box
         sx={{
-          '& .MuiOutlinedInput-root': {
-            backgroundColor: 'white',
-          },
+          display: 'flex',
+          gap: 2,
+          width: '100%',
+          flexDirection: { xs: 'column', sm: 'row' },
         }}
-      />
-      <Button
-        type="submit"
-        variant="contained"
-        size="large"
-        disabled={loading || disabled || !url.trim()}
-        sx={{
-          minWidth: { xs: '100%', sm: 140 },
-          height: { sm: 56 },
-          whiteSpace: 'nowrap',
-        }}
-        startIcon={
-          loading ? (
-            <CircularProgress size={20} color="inherit" />
-          ) : (
-            <Search />
-          )
-        }
       >
-        {loading ? 'Analyzing...' : 'Analyze'}
-      </Button>
+        <TextField
+          fullWidth
+          value={url}
+          onChange={(e) => {
+            setUrl(e.target.value);
+            if (error) setError(null);
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder="Enter URL to analyze (e.g., https://example.com)"
+          disabled={loading || disabled}
+          error={!!error}
+          helperText={error}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <LinkIcon color={error ? 'error' : 'action'} />
+              </InputAdornment>
+            ),
+          }}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: 'white',
+            },
+          }}
+        />
+        <Button
+          type="submit"
+          variant="contained"
+          size="large"
+          disabled={loading || disabled || !url.trim()}
+          sx={{
+            minWidth: { xs: '100%', sm: 140 },
+            height: { sm: 56 },
+            whiteSpace: 'nowrap',
+          }}
+          startIcon={
+            loading ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              <Search />
+            )
+          }
+        >
+          {loading ? 'Analyzing...' : 'Analyze'}
+        </Button>
+      </Box>
+
+      {/* Visual Analysis Option */}
+      <Box sx={{ mt: 1.5 }}>
+        <Tooltip
+          title="Capture screenshots at each redirect step using a real browser. Takes longer but provides visual proof of bot protection."
+          arrow
+        >
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={visualAnalysis}
+                onChange={(e) => setVisualAnalysis(e.target.checked)}
+                disabled={loading || disabled}
+                size="small"
+                icon={<CameraAlt sx={{ color: 'action.disabled' }} />}
+                checkedIcon={<CameraAlt sx={{ color: 'primary.main' }} />}
+              />
+            }
+            label={
+              <Box component="span" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
+                Enable Visual Analysis{' '}
+                <Box component="span" sx={{ color: 'text.disabled', fontSize: '0.75rem' }}>
+                  (captures screenshots, takes ~10-30s longer)
+                </Box>
+              </Box>
+            }
+          />
+        </Tooltip>
+      </Box>
     </Box>
   );
 }

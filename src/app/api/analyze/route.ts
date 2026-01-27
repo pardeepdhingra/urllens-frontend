@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { analyzeUrl, normalizeUrl } from '@/lib/urlAnalyzer';
+import { analyzeUrlVisually } from '@/lib/screenshotAnalyzer';
 import { calculateScore } from '@/lib/scoringEngine';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rateLimit';
 import type { AnalyzeRequest, AnalyzeResponse, URLAnalysis } from '@/types';
@@ -87,6 +88,24 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeRe
     // 4. Analyze the URL
     const analysisResult = await analyzeUrl(body.url);
 
+    // 4.5 Run visual analysis if requested
+    let visualAnalysisResult = null;
+    if (body.visualAnalysis === true) {
+      try {
+        console.log('Starting visual analysis for:', body.url);
+        visualAnalysisResult = await analyzeUrlVisually(body.url);
+        console.log('Visual analysis complete:', {
+          screenshotCount: visualAnalysisResult.screenshots.length,
+          blocked: visualAnalysisResult.blocked,
+          duration: visualAnalysisResult.analysis_duration_ms,
+          firstScreenshotSize: visualAnalysisResult.screenshots[0]?.screenshot_base64?.length || 0,
+        });
+      } catch (visualError) {
+        console.error('Visual analysis error:', visualError);
+        // Visual analysis is optional - continue without it
+      }
+    }
+
     // 5. Calculate score
     const { score, recommendation } = calculateScore(analysisResult);
 
@@ -102,6 +121,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeRe
       content_type: analysisResult.contentType,
       js_required: analysisResult.jsHints,
       bot_protections: analysisResult.botProtections,
+      headers: analysisResult.headers,
+      robots_txt: analysisResult.robotsTxt,
+      rate_limit_info: analysisResult.rateLimitInfo,
+      utm_analysis: analysisResult.utmAnalysis,
+      visual_analysis: visualAnalysisResult,
       score,
       recommendation,
       analyzed_at: new Date().toISOString(),

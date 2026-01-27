@@ -4,7 +4,10 @@
 
 import axios, { AxiosError, type AxiosResponse } from 'axios';
 import * as cheerio from 'cheerio';
-import type { Redirect, BotProtection, BotProtectionType } from '@/types';
+import type { Redirect, BotProtection, BotProtectionType, RobotsTxtResult, RateLimitDetection, UTMAnalysisResult } from '@/types';
+import { parseRobotsTxt } from './robotsParser';
+import { detectRateLimit } from './rateLimitDetector';
+import { analyzeParameterFlow } from './utmAnalyzer';
 
 // Type alias for cheerio loaded document
 type CheerioDocument = ReturnType<typeof cheerio.load>;
@@ -133,6 +136,9 @@ export interface AnalyzerResult {
   responseTimeMs: number;
   contentType: string | null;
   headers: Record<string, string>;
+  robotsTxt?: RobotsTxtResult;
+  rateLimitInfo?: RateLimitDetection;
+  utmAnalysis?: UTMAnalysisResult;
   error?: string;
 }
 
@@ -318,6 +324,19 @@ export async function analyzeUrl(inputUrl: string): Promise<AnalyzerResult> {
     const jsHints = detectJavaScriptHints(html, $);
     const botProtections = detectBotProtections(html, headers);
 
+    // Fetch robots.txt and detect rate limiting in parallel
+    const [robotsTxt, rateLimitInfo] = await Promise.all([
+      parseRobotsTxt(finalUrl).catch(() => undefined),
+      detectRateLimit(finalUrl).catch(() => undefined),
+    ]);
+
+    // Analyze UTM/parameter flow through redirects
+    const redirectUrls = [originalUrl, ...redirects.map(r => r.to)];
+    if (finalUrl && !redirectUrls.includes(finalUrl)) {
+      redirectUrls.push(finalUrl);
+    }
+    const utmAnalysis = analyzeParameterFlow(redirectUrls);
+
     return {
       url: originalUrl,
       finalUrl,
@@ -328,6 +347,9 @@ export async function analyzeUrl(inputUrl: string): Promise<AnalyzerResult> {
       responseTimeMs,
       contentType: headers['content-type'] || null,
       headers,
+      robotsTxt,
+      rateLimitInfo,
+      utmAnalysis,
     };
   } catch (error) {
     const responseTimeMs = Date.now() - startTime;

@@ -14,7 +14,7 @@ import {
   Alert,
   Divider,
 } from '@mui/material';
-import { Header, URLInput, ResultDisplay, HistoryTable } from '@/components';
+import { Header, URLInput, EnhancedResultDisplay, HistoryTable } from '@/components';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { URLAnalysis, AnalysisResult } from '@/types';
 
@@ -23,6 +23,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [analysisId, setAnalysisId] = useState<string | null>(null);
   const [history, setHistory] = useState<URLAnalysis[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState<{
@@ -67,10 +68,11 @@ export default function DashboardPage() {
   }, [fetchHistory]);
 
   // Analyze URL
-  const handleAnalyze = async (url: string) => {
+  const handleAnalyze = async (url: string, options?: { visualAnalysis?: boolean }) => {
     setLoading(true);
     setError(null);
     setResult(null);
+    setAnalysisId(null);
 
     try {
       const response = await fetch('/api/analyze', {
@@ -78,7 +80,7 @@ export default function DashboardPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, visualAnalysis: options?.visualAnalysis }),
       });
 
       const data = await response.json();
@@ -97,16 +99,22 @@ export default function DashboardPage() {
       const analysisResult: AnalysisResult = {
         url: data.data.url,
         final_url: data.data.final_url,
-        status: data.data.status,
+        status: data.data.status_code || data.data.status,
         redirects: data.data.redirects,
-        js_hints: data.data.js_hints,
+        js_hints: data.data.js_required || data.data.js_hints,
         bot_protections: data.data.bot_protections,
         score: data.data.score,
         recommendation: data.data.recommendation,
-        response_time_ms: 0, // Not stored in DB
+        response_time_ms: data.data.response_time_ms || 0,
+        headers: data.data.headers,
+        robotsTxt: data.data.robots_txt,
+        rateLimitInfo: data.data.rate_limit_info,
+        visualAnalysis: data.data.visual_analysis,
+        utmAnalysis: data.data.utm_analysis,
       };
 
       setResult(analysisResult);
+      setAnalysisId(data.data.id);
       setSnackbar({
         open: true,
         message: 'URL analyzed successfully!',
@@ -133,6 +141,40 @@ export default function DashboardPage() {
     handleAnalyze(url);
     // Scroll to top to see results
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // View historical analysis
+  const handleView = (analysis: URLAnalysis) => {
+    // Map URLAnalysis to AnalysisResult format
+    const analysisResult: AnalysisResult = {
+      url: analysis.url,
+      final_url: analysis.final_url,
+      status: analysis.status_code || 0,
+      redirects: analysis.redirects,
+      js_hints: analysis.js_required,
+      bot_protections: analysis.bot_protections,
+      score: analysis.score,
+      recommendation: analysis.recommendation,
+      response_time_ms: analysis.response_time_ms || 0,
+      headers: analysis.headers,
+      robotsTxt: analysis.robots_txt,
+      rateLimitInfo: analysis.rate_limit_info,
+      visualAnalysis: analysis.visual_analysis,
+      utmAnalysis: analysis.utm_analysis,
+    };
+
+    setResult(analysisResult);
+    setAnalysisId(analysis.id);
+    setError(null);
+
+    // Scroll to top to see results
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    setSnackbar({
+      open: true,
+      message: 'Loaded analysis from history',
+      severity: 'info',
+    });
   };
 
   // Delete history item
@@ -202,11 +244,9 @@ export default function DashboardPage() {
         {/* Results Section */}
         {(result || loading || error) && (
           <Box sx={{ mb: 4 }}>
-            <Typography variant="h5" fontWeight={600} gutterBottom>
-              Analysis Result
-            </Typography>
-            <ResultDisplay
+            <EnhancedResultDisplay
               result={result}
+              analysisId={analysisId || undefined}
               loading={loading}
               error={error}
             />
@@ -227,6 +267,7 @@ export default function DashboardPage() {
             history={history}
             onRerun={handleRerun}
             onDelete={handleDelete}
+            onView={handleView}
             loading={historyLoading}
           />
         </Box>

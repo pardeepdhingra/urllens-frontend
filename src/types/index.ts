@@ -19,6 +19,102 @@ export interface URLAnalysis {
   recommendation: string;
   analyzed_at: string;
   created_at: string;
+  // New fields for enhanced features
+  headers?: Record<string, string>;
+  robots_txt?: RobotsTxtResult;
+  rate_limit_info?: RateLimitDetection;
+  share_id?: string;
+  // Visual analysis fields
+  visual_analysis?: VisualAnalysisResult;
+  // UTM tracking analysis
+  utm_analysis?: UTMAnalysisResult;
+}
+
+// robots.txt parsing result
+export interface RobotsTxtResult {
+  exists: boolean;
+  allowed: boolean;
+  crawl_delay?: number;
+  sitemaps: string[];
+  rules: RobotRule[];
+  raw_content?: string;
+}
+
+export interface RobotRule {
+  user_agent: string;
+  allow: string[];
+  disallow: string[];
+}
+
+// Rate limit detection result
+export interface RateLimitDetection {
+  detected: boolean;
+  requests_made: number;
+  requests_succeeded: number;
+  estimated_limit?: number;
+  time_window_seconds?: number;
+  headers_found: string[];
+}
+
+// Visual Analysis - Redirect Screenshot
+export interface RedirectScreenshot {
+  step: number;
+  url: string;
+  status?: number;
+  screenshot_url?: string;
+  screenshot_base64?: string;
+  page_title?: string;
+  timestamp: string;
+  blocked_reason?: 'captcha' | 'cloudflare' | 'rate_limit' | 'access_denied' | 'timeout' | null;
+}
+
+// Visual Analysis Result
+export interface VisualAnalysisResult {
+  screenshots: RedirectScreenshot[];
+  total_redirects: number;
+  final_url: string;
+  blocked: boolean;
+  blocked_at_step?: number;
+  analysis_duration_ms: number;
+}
+
+// UTM & Parameter Tracking
+export interface ParameterChange {
+  name: string;
+  action: 'preserved' | 'added' | 'removed' | 'modified';
+  originalValue?: string;
+  newValue?: string;
+}
+
+export interface RedirectParameterState {
+  step: number;
+  url: string;
+  allParams: Record<string, string>;
+  utmParams: Record<string, string>;
+  changes: ParameterChange[];
+}
+
+export interface UTMIssue {
+  severity: 'error' | 'warning' | 'info';
+  message: string;
+  affectedParams: string[];
+  step?: number;
+}
+
+export interface UTMAnalysisResult {
+  hasUtmParams: boolean;
+  utmPreserved: boolean;
+  allParamsPreserved: boolean;
+  initialUtmParams: Record<string, string>;
+  finalUtmParams: Record<string, string>;
+  utmLostAt?: number;
+  initialParams: Record<string, string>;
+  finalParams: Record<string, string>;
+  parameterFlow: RedirectParameterState[];
+  paramsAdded: string[];
+  paramsRemoved: string[];
+  paramsModified: string[];
+  issues: UTMIssue[];
 }
 
 // Redirect chain item
@@ -60,11 +156,16 @@ export interface AnalysisResult {
   response_time_ms: number;
   content_type?: string;
   headers?: Record<string, string>;
+  robotsTxt?: RobotsTxtResult;
+  rateLimitInfo?: RateLimitDetection;
+  visualAnalysis?: VisualAnalysisResult;
+  utmAnalysis?: UTMAnalysisResult;
 }
 
 // API request/response types
 export interface AnalyzeRequest {
   url: string;
+  visualAnalysis?: boolean;
 }
 
 export interface AnalyzeResponse {
@@ -125,7 +226,7 @@ export interface RateLimitInfo {
 
 // Component props types
 export interface URLInputProps {
-  onAnalyze: (url: string) => Promise<void>;
+  onAnalyze: (url: string, options?: { visualAnalysis?: boolean }) => Promise<void>;
   loading: boolean;
   disabled?: boolean;
 }
@@ -140,6 +241,7 @@ export interface HistoryTableProps {
   history: URLAnalysis[];
   onRerun: (url: string) => void;
   onDelete: (id: string) => void;
+  onView: (analysis: URLAnalysis) => void;
   loading: boolean;
 }
 

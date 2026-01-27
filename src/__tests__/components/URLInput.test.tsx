@@ -45,7 +45,7 @@ describe('URLInput Component', () => {
     await user.click(button);
 
     await waitFor(() => {
-      expect(mockOnAnalyze).toHaveBeenCalledWith('https://example.com');
+      expect(mockOnAnalyze).toHaveBeenCalledWith('https://example.com', { visualAnalysis: false });
     });
   });
 
@@ -126,7 +126,7 @@ describe('URLInput Component', () => {
     await user.type(input, 'https://example.com{enter}');
 
     await waitFor(() => {
-      expect(mockOnAnalyze).toHaveBeenCalledWith('https://example.com');
+      expect(mockOnAnalyze).toHaveBeenCalledWith('https://example.com', { visualAnalysis: false });
     });
   });
 
@@ -145,7 +145,7 @@ describe('URLInput Component', () => {
     await user.click(button);
 
     await waitFor(() => {
-      expect(mockOnAnalyze).toHaveBeenCalledWith('https://example.com');
+      expect(mockOnAnalyze).toHaveBeenCalledWith('https://example.com', { visualAnalysis: false });
     });
   });
 

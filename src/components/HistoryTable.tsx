@@ -34,6 +34,7 @@ import {
   OpenInNew,
   Shield,
   Code,
+  Visibility,
 } from '@mui/icons-material';
 import type { HistoryTableProps } from '@/types';
 import { getScoreColor } from '@/lib/scoringEngine';
@@ -67,6 +68,7 @@ export default function HistoryTable({
   history,
   onRerun,
   onDelete,
+  onView,
   loading,
 }: HistoryTableProps) {
   const [page, setPage] = useState(0);
@@ -262,6 +264,15 @@ export default function HistoryTable({
                 </TableCell>
 
                 <TableCell align="right">
+                  <Tooltip title="View analysis">
+                    <IconButton
+                      size="small"
+                      onClick={() => onView(item)}
+                      color="info"
+                    >
+                      <Visibility sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
                   <Tooltip title="Re-run analysis">
                     <IconButton
                       size="small"
