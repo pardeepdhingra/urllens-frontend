@@ -342,6 +342,20 @@ export function RedirectTimeline({ visualAnalysis, loading }: RedirectTimelinePr
     );
   }
 
+  // Visual analysis disabled (e.g., on Vercel serverless)
+  if (visualAnalysis?.disabled) {
+    return (
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+          Visual Redirect Timeline
+        </Typography>
+        <Alert severity="warning">
+          {visualAnalysis.disabled_reason || 'Visual analysis is not available in this deployment environment.'}
+        </Alert>
+      </Paper>
+    );
+  }
+
   // No visual analysis available
   if (!visualAnalysis || visualAnalysis.screenshots.length === 0) {
     return (

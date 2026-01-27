@@ -119,11 +119,13 @@ export default function DashboardPage() {
       };
 
       setResult(analysisResult);
-      setAnalysisId(data.data.id);
+      // Only set analysisId if the analysis was successfully saved to database
+      // This ensures share functionality won't try to share unsaved analysis
+      setAnalysisId(data.saved && data.data.id ? data.data.id : null);
       setSnackbar({
         open: true,
-        message: 'URL analyzed successfully!',
-        severity: 'success',
+        message: data.saved ? 'URL analyzed successfully!' : 'URL analyzed (not saved - sharing unavailable)',
+        severity: data.saved ? 'success' : 'info',
       });
 
       // Refresh history

@@ -167,13 +167,15 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeRe
 
     if (saveError) {
       console.error('Error saving analysis:', saveError);
-      // Return the analysis even if saving fails
+      // Return the analysis even if saving fails, but mark as not saved
+      // This prevents share functionality from trying to share unsaved analysis
       return NextResponse.json(
         {
           success: true,
+          saved: false,
           data: {
             ...analysisData,
-            id: crypto.randomUUID(),
+            id: '', // Empty ID since not saved to database
             created_at: new Date().toISOString(),
           } as URLAnalysis,
         },
@@ -183,7 +185,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeRe
 
     // 8. Return success response
     return NextResponse.json(
-      { success: true, data: savedData as URLAnalysis },
+      { success: true, saved: true, data: savedData as URLAnalysis },
       { status: 200, headers: rateLimitHeaders }
     );
   } catch (error) {
