@@ -9,7 +9,7 @@
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS url_analyses (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE, -- Nullable for guest analyses
   url TEXT NOT NULL,
   final_url TEXT,
   status_code INTEGER,
@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS url_analyses (
   share_id TEXT UNIQUE,
   score INTEGER DEFAULT 0,
   recommendation TEXT,
+  is_guest BOOLEAN DEFAULT false, -- Flag for guest analyses
   analyzed_at TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -118,7 +119,18 @@ BEGIN
     WHERE table_name = 'url_analyses' AND column_name = 'share_id') THEN
     ALTER TABLE url_analyses ADD COLUMN share_id TEXT UNIQUE;
   END IF;
+
+  -- Add is_guest column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'url_analyses' AND column_name = 'is_guest') THEN
+    ALTER TABLE url_analyses ADD COLUMN is_guest BOOLEAN DEFAULT false;
+  END IF;
 END $$;
+
+-- -----------------------------------------------------------------------------
+-- Make user_id nullable for guest analyses (migration for existing tables)
+-- -----------------------------------------------------------------------------
+ALTER TABLE url_analyses ALTER COLUMN user_id DROP NOT NULL;
 
 -- -----------------------------------------------------------------------------
 -- Done!
