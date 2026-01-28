@@ -63,7 +63,7 @@ interface SocialPreviewProps {
 
 type Platform = 'facebook' | 'linkedin' | 'google' | 'twitter' | 'whatsapp' | 'telegram';
 
-const PLATFORM_INFO: Record<Platform, { label: string; icon: React.ReactNode }> = {
+const PLATFORM_INFO: Record<Platform, { label: string; icon: React.ReactElement }> = {
   facebook: { label: 'Facebook', icon: <Facebook /> },
   linkedin: { label: 'LinkedIn', icon: <LinkedIn /> },
   google: { label: 'Google', icon: <Google /> },
