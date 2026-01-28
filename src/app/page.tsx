@@ -19,7 +19,8 @@ import {
   TrendingUp,
   Search,
 } from '@mui/icons-material';
-import { Header, FAQSection, faqData } from '@/components';
+import { Header, FAQSection } from '@/components';
+import { faqData } from '@/lib/faqData';
 import { getServerUser } from '@/lib/supabase/server';
 import { LandingButtons } from '@/components/LandingButtons';
 import Link from 'next/link';
