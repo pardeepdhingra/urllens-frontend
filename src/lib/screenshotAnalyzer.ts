@@ -223,16 +223,42 @@ export async function analyzeUrlVisually(
   const browserlessApiKey = process.env.BROWSERLESS_API_KEY;
   const useBrowserless = !!browserlessApiKey;
 
+  console.log('Visual analysis starting...', {
+    useBrowserless,
+    hasBrowserlessKey: !!browserlessApiKey,
+    keyLength: browserlessApiKey?.length || 0,
+  });
+
   try {
     // Dynamically import Playwright to avoid loading it when not needed
-    // This is critical for serverless deployments where Playwright may not be available
     let chromium;
-    try {
-      const playwright = await import('playwright');
-      chromium = playwright.chromium;
-    } catch (importError) {
-      // If Playwright isn't available and we don't have Browserless, we can't proceed
-      if (!useBrowserless) {
+
+    // If we have Browserless, prefer playwright-core (lighter, no browser binaries)
+    if (useBrowserless) {
+      try {
+        console.log('Importing playwright-core for Browserless...');
+        const playwrightCore = await import('playwright-core');
+        chromium = playwrightCore.chromium;
+        console.log('playwright-core imported successfully');
+      } catch (coreImportError) {
+        console.error('Failed to import playwright-core:', coreImportError);
+        return {
+          screenshots: [],
+          total_redirects: 0,
+          final_url: inputUrl,
+          blocked: false,
+          analysis_duration_ms: Date.now() - startTime,
+          disabled: true,
+          disabled_reason: 'Failed to load browser automation library. Please check deployment configuration.',
+        };
+      }
+    } else {
+      // No Browserless, try full Playwright for local development
+      try {
+        console.log('Importing full playwright for local browser...');
+        const playwright = await import('playwright');
+        chromium = playwright.chromium;
+      } catch (importError) {
         console.warn('Playwright is not available and no Browserless API key configured:', importError);
         return {
           screenshots: [],
@@ -241,20 +267,30 @@ export async function analyzeUrlVisually(
           blocked: false,
           analysis_duration_ms: Date.now() - startTime,
           disabled: true,
-          disabled_reason: 'Visual analysis requires either local Playwright or a Browserless.io API key.',
+          disabled_reason: 'Visual analysis requires either local Playwright or a Browserless.io API key. Add BROWSERLESS_API_KEY to enable.',
         };
       }
-      // We have Browserless, so we can still try to connect
-      const playwright = await import('playwright-core');
-      chromium = playwright.chromium;
     }
 
     // Connect to Browserless.io or launch local browser
     if (useBrowserless) {
       console.log('Connecting to Browserless.io...');
       const browserlessUrl = `wss://chrome.browserless.io?token=${browserlessApiKey}`;
-      browser = await chromium.connectOverCDP(browserlessUrl);
-      console.log('Connected to Browserless.io successfully');
+      try {
+        browser = await chromium.connectOverCDP(browserlessUrl);
+        console.log('Connected to Browserless.io successfully');
+      } catch (connectError) {
+        console.error('Failed to connect to Browserless.io:', connectError);
+        return {
+          screenshots: [],
+          total_redirects: 0,
+          final_url: inputUrl,
+          blocked: false,
+          analysis_duration_ms: Date.now() - startTime,
+          disabled: true,
+          disabled_reason: 'Failed to connect to Browserless.io. Please verify your API key is correct.',
+        };
+      }
     } else {
       // Try to find system Chrome if Playwright's chromium is not available
       const chromeExecutable = findChromeExecutable();
