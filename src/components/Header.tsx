@@ -24,6 +24,7 @@ import {
   Person,
   Logout,
   Dashboard,
+  AutoAwesome,
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -92,6 +93,19 @@ export default function Header({ user }: HeaderProps) {
 
         {/* Navigation */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Features link - always visible */}
+          {!isMobile && (
+            <Button
+              component={Link}
+              href="/features"
+              startIcon={<AutoAwesome />}
+              color="inherit"
+              sx={{ mr: 1 }}
+            >
+              Features
+            </Button>
+          )}
+
           {user ? (
             <>
               {!isMobile && (
@@ -138,14 +152,24 @@ export default function Header({ user }: HeaderProps) {
                 </Box>
                 <Divider />
                 {isMobile && (
-                  <MenuItem
-                    component={Link}
-                    href="/dashboard"
-                    onClick={handleMenuClose}
-                  >
-                    <Dashboard sx={{ mr: 1, fontSize: 20 }} />
-                    Dashboard
-                  </MenuItem>
+                  <>
+                    <MenuItem
+                      component={Link}
+                      href="/features"
+                      onClick={handleMenuClose}
+                    >
+                      <AutoAwesome sx={{ mr: 1, fontSize: 20 }} />
+                      Features
+                    </MenuItem>
+                    <MenuItem
+                      component={Link}
+                      href="/dashboard"
+                      onClick={handleMenuClose}
+                    >
+                      <Dashboard sx={{ mr: 1, fontSize: 20 }} />
+                      Dashboard
+                    </MenuItem>
+                  </>
                 )}
                 <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
                   <Logout sx={{ mr: 1, fontSize: 20 }} />

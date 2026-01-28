@@ -11,10 +11,18 @@ import {
   TrendingUp,
   Search,
   History,
+  CameraAlt,
+  Analytics,
+  Link as LinkIcon,
+  Share,
+  Storage,
+  Security,
 } from '@mui/icons-material';
 import { Header } from '@/components';
 import { getServerUser } from '@/lib/supabase/server';
 import { LandingButtons } from '@/components/LandingButtons';
+import Link from 'next/link';
+import { Button } from '@mui/material';
 
 const features = [
   {
@@ -28,9 +36,29 @@ const features = [
     description: 'Identify Cloudflare, reCAPTCHA, DataDome, and other anti-bot measures.',
   },
   {
-    icon: Code,
-    title: 'JavaScript Detection',
-    description: 'Know if a page requires JavaScript rendering for content access.',
+    icon: CameraAlt,
+    title: 'Visual Redirect Timeline',
+    description: 'See screenshots at each redirect hop to visualize the complete journey.',
+  },
+  {
+    icon: Analytics,
+    title: 'SEO/AEO/GEO/LLMO Analysis',
+    description: 'Get scores for Search, Answer, Generative, and LLM optimization.',
+  },
+  {
+    icon: LinkIcon,
+    title: 'UTM & Parameter Tracking',
+    description: 'Track how URL parameters change through redirects for marketing attribution.',
+  },
+  {
+    icon: Storage,
+    title: 'Headers & robots.txt',
+    description: 'Inspect HTTP headers and robots.txt rules affecting crawler access.',
+  },
+  {
+    icon: Security,
+    title: 'Rate Limit Detection',
+    description: 'Identify rate limiting headers and understand scraping constraints.',
   },
   {
     icon: TrendingUp,
@@ -38,14 +66,9 @@ const features = [
     description: 'Get a clear 0-100 score indicating how easy a URL is to scrape.',
   },
   {
-    icon: Search,
-    title: 'Detailed Reports',
-    description: 'Comprehensive analysis with actionable recommendations for your scraping strategy.',
-  },
-  {
-    icon: History,
-    title: 'Analysis History',
-    description: 'Track all your analyses and quickly re-run previous checks.',
+    icon: Share,
+    title: 'Shareable Reports',
+    description: 'Generate shareable links to collaborate with your team.',
   },
 ];
 
@@ -76,9 +99,9 @@ export default async function LandingPage() {
                   lineHeight: 1.2,
                 }}
               >
-                Analyze URL Scrapability
+                The Complete URL
                 <br />
-                in Seconds
+                Analysis Platform
               </Typography>
               <Typography
                 variant="h5"
@@ -89,8 +112,8 @@ export default async function LandingPage() {
                   fontSize: { xs: '1.1rem', md: '1.25rem' },
                 }}
               >
-                Instantly detect bot protections, JavaScript requirements, and get
-                actionable scraping recommendations for any URL.
+                Analyze scrapability, SEO optimization, redirect chains, bot protections,
+                and more. Get actionable insights with visual reports and shareable links.
               </Typography>
               <LandingButtons isLoggedIn={!!user} />
             </Grid>
@@ -156,16 +179,26 @@ export default async function LandingPage() {
           align="center"
           sx={{ mb: 2, fontWeight: 700 }}
         >
-          Powerful URL Analysis
+          Everything You Need
         </Typography>
         <Typography
           variant="body1"
           align="center"
           color="text.secondary"
-          sx={{ mb: 6, maxWidth: 600, mx: 'auto' }}
+          sx={{ mb: 2, maxWidth: 700, mx: 'auto' }}
         >
-          Everything you need to understand and plan your web scraping strategy
+          A comprehensive toolkit for web scraping analysis, SEO auditing, and URL intelligence
         </Typography>
+        <Box sx={{ textAlign: 'center', mb: 6 }}>
+          <Button
+            component={Link}
+            href="/features"
+            variant="text"
+            sx={{ textTransform: 'none' }}
+          >
+            Learn more about all features →
+          </Button>
+        </Box>
 
         <Grid container spacing={3}>
           {features.map((feature, index) => (
