@@ -143,7 +143,7 @@ export default function AboutPardeepPage() {
                   }}
                 >
                   <Avatar
-                    src="/pardeep.jpg"
+                    src="/pardeep.png"
                     alt="Pardeep Dhingra"
                     sx={{
                       width: { xs: 150, md: 200 },
