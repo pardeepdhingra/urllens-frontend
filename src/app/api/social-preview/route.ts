@@ -4,6 +4,9 @@
 // Analyzes a URL and returns social media preview data
 // ============================================================================
 
+// Force Node.js runtime for JSDOM compatibility
+export const runtime = 'nodejs';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { analyzeSocialPreview, SocialPreviewResult } from '@/lib/socialPreviewAnalyzer';
