@@ -1,0 +1,31 @@
+# URL Lens - robots.txt
+# https://galasar.com
+
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://galasar.com/sitemap.xml
+
+# Disallow API routes and private paths
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /login
+Disallow: /signup
+
+# Allow search engines to crawl public pages
+User-agent: Googlebot
+Allow: /
+Allow: /features
+
+User-agent: Bingbot
+Allow: /
+Allow: /features
+
+# Crawl delay for less important bots
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
