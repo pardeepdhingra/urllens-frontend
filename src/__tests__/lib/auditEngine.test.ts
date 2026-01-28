@@ -2,6 +2,37 @@
 // URL Lens - Audit Engine Tests
 // ============================================================================
 
+// Mock urlAnalyzer before importing auditEngine
+jest.mock('@/lib/urlAnalyzer', () => ({
+  analyzeUrl: jest.fn(),
+  normalizeUrl: (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed) throw new Error('Invalid URL format');
+    const withProtocol = trimmed.startsWith('http') ? trimmed : `https://${trimmed}`;
+    try {
+      return new URL(withProtocol).toString();
+    } catch {
+      throw new Error('Invalid URL format');
+    }
+  },
+}));
+
+// Mock scoringEngine
+jest.mock('@/lib/scoringEngine', () => ({
+  calculateScore: jest.fn().mockReturnValue({
+    score: 85,
+    recommendation: 'Good',
+    breakdown: {
+      base_score: 100,
+      status_penalty: 0,
+      redirect_penalty: 0,
+      js_penalty: 0,
+      bot_protection_penalty: 15,
+      final_score: 85,
+    },
+  }),
+}));
+
 import {
   normalizeURL,
   validateURLs,
@@ -195,19 +226,20 @@ describe('Audit Engine', () => {
       expect(summary.bestEntryPoints[0].scrapeLikelihoodScore).toBe(90);
     });
 
-    it('should count by status code', () => {
+    it('should count recommendations correctly', () => {
       const results: URLAuditResult[] = [
-        createMockResult({ status: 200 }),
-        createMockResult({ status: 200 }),
-        createMockResult({ status: 301 }),
-        createMockResult({ status: 403 }),
+        createMockResult({ status: 200, recommendation: 'best_entry_point' }),
+        createMockResult({ status: 200, recommendation: 'good' }),
+        createMockResult({ status: 301, recommendation: 'moderate' }),
+        createMockResult({ status: 403, accessible: false, recommendation: 'blocked' }),
       ];
 
       const summary = generateAuditSummary(results);
 
-      expect(summary.byStatus[200]).toBe(2);
-      expect(summary.byStatus[301]).toBe(1);
-      expect(summary.byStatus[403]).toBe(1);
+      expect(summary.recommendationBreakdown?.best_entry_point).toBe(1);
+      expect(summary.recommendationBreakdown?.good).toBe(1);
+      expect(summary.recommendationBreakdown?.moderate).toBe(1);
+      expect(summary.recommendationBreakdown?.blocked).toBe(1);
     });
 
     it('should handle empty results', () => {

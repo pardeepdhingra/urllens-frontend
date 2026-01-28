@@ -91,6 +91,8 @@ export interface AuditProgress {
   discoveredUrls?: number;
   percentComplete: number;
   error?: string;
+  // Latest batch results for progressive UI updates
+  latestResults?: URLAuditResult[];
 }
 
 // ============================================================================
@@ -141,8 +143,17 @@ export interface AuditSummary {
   accessibleCount: number;
   blockedCount: number;
   averageScore: number;
+  jsRequiredCount?: number;
   bestEntryPoints: URLAuditResult[];
-  byStatus: Record<number, number>;
+  byStatus?: Record<number, number>;
+  recommendationBreakdown?: {
+    best_entry_point: number;
+    good: number;
+    moderate: number;
+    challenging: number;
+    blocked: number;
+  };
+  commonProtections?: Array<{ name: string; count: number }>;
 }
 
 // ============================================================================

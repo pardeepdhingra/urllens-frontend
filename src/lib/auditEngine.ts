@@ -1,365 +1,161 @@
 // ============================================================================
 // URL Lens - Audit Engine
-// Core audit orchestration and URL testing
+// Batch URL processing that REUSES the single URL analysis infrastructure
 // ============================================================================
 
-import {
+import { analyzeUrl, normalizeUrl, type AnalyzerResult } from './urlAnalyzer';
+import { calculateScore } from './scoringEngine';
+import type {
   URLAuditResult,
-  AuditRedirect,
-  ScoreBreakdown,
+  AuditSummary,
   AuditRecommendation,
   AuditProgress,
   AuditStatus,
+  ScoreBreakdown,
   AUDIT_LIMITS,
 } from '@/types/audit';
 
 // ============================================================================
-// Bot Protection Patterns
+// Configuration
 // ============================================================================
 
-const BOT_PROTECTION_PATTERNS = [
-  { name: 'Cloudflare', patterns: ['cf-ray', 'cloudflare', '__cf_bm'] },
-  { name: 'Akamai', patterns: ['akamai', '_abck', 'ak_bmsc'] },
-  { name: 'PerimeterX', patterns: ['_px', 'perimeterx'] },
-  { name: 'DataDome', patterns: ['datadome'] },
-  { name: 'Imperva', patterns: ['incap_ses', 'visid_incap'] },
-  { name: 'reCAPTCHA', patterns: ['recaptcha', 'g-recaptcha'] },
-  { name: 'hCaptcha', patterns: ['hcaptcha', 'h-captcha'] },
-  { name: 'Distil Networks', patterns: ['distil', 'd_id'] },
-  { name: 'Shape Security', patterns: ['shape', '_imp_apg'] },
-];
-
-const JS_REQUIRED_PATTERNS = [
-  'javascript required',
-  'enable javascript',
-  'javascript is disabled',
-  'please enable javascript',
-  'noscript',
-  'browser not supported',
-  'loading...',
-  '<div id="root"></div>',
-  '<div id="app"></div>',
-  'window.__INITIAL_STATE__',
-  'window.__NEXT_DATA__',
-  '__NUXT__',
-];
+const AUDIT_CONFIG = {
+  // Number of URLs to process concurrently in each batch
+  batchSize: 5,
+  // Delay between batches (ms) to avoid overwhelming servers
+  batchDelayMs: 500,
+  // Maximum URLs per audit session
+  maxUrls: 500,
+  // Timeout per URL (ms)
+  timeoutMs: 15000,
+};
 
 // ============================================================================
-// URL Testing Functions
+// Single URL Analysis (wrapper around existing analyzeUrl)
 // ============================================================================
 
 /**
- * Test a single URL for accessibility and scrapeability
+ * Analyzes a single URL using the SAME logic as single URL analysis
+ * and converts the result to URLAuditResult format
  */
-export async function testURL(
-  url: string,
-  timeoutMs: number = AUDIT_LIMITS.timeoutMs
-): Promise<URLAuditResult> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  const redirects: AuditRedirect[] = [];
-  let currentUrl = url;
-  let finalUrl = url;
-  let status = 0;
-  let contentType: string | undefined;
-  let html = '';
-  let accessible = false;
-  let blockedReason: string | undefined;
-  let responseTimeMs: number | undefined;
-
-  const startTime = Date.now();
-
+async function analyzeUrlForAudit(url: string): Promise<URLAuditResult> {
   try {
-    // First try HEAD request
-    const headResponse = await fetch(currentUrl, {
-      method: 'HEAD',
-      signal: controller.signal,
-      redirect: 'manual',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; URLLens/1.0; +https://urllens.com)',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    // Use the EXACT SAME analyzeUrl function as single URL analysis
+    // This ensures consistency between single URL and batch analysis
+    const result: AnalyzerResult = await analyzeUrl(url);
+
+    // Use the EXACT SAME scoring engine as single URL analysis
+    const { score, recommendation, breakdown } = calculateScore(result);
+
+    // Convert to URLAuditResult format
+    const auditResult: URLAuditResult = {
+      url: result.url,
+      finalUrl: result.finalUrl,
+      status: result.status,
+      accessible: result.status >= 200 && result.status < 400 && !result.error,
+      scrapeLikelihoodScore: score,
+      recommendation: mapScoreToRecommendation(score, result),
+      jsRequired: result.jsHints,
+      botProtections: result.botProtections.map(bp => bp.type),
+      redirects: result.redirects.map(r => ({
+        from: r.from,
+        to: r.to,
+        status: r.status,
+      })),
+      contentType: result.contentType || undefined,
+      responseTimeMs: result.responseTimeMs,
+      blockedReason: result.error || getBlockedReason(result),
+      scoreBreakdown: {
+        httpStatus: Math.max(0, 40 - (breakdown.status_penalty || 0)),
+        jsRequired: result.jsHints ? 0 : 20,
+        htmlResponse: result.contentType?.includes('text/html') ? 15 : 0,
+        botProtection: Math.max(0, 15 - Math.min(15, breakdown.bot_protection_penalty || 0)),
+        redirectChain: Math.max(0, 10 - (breakdown.redirect_penalty || 0)),
+        total: score,
       },
-    });
+    };
 
-    // Follow redirects manually to track them
-    let response = headResponse;
-    let redirectCount = 0;
-    const maxRedirects = 10;
-
-    while (
-      (response.status === 301 || response.status === 302 || response.status === 303 || response.status === 307 || response.status === 308) &&
-      redirectCount < maxRedirects
-    ) {
-      const location = response.headers.get('location');
-      if (!location) break;
-
-      const nextUrl = new URL(location, currentUrl).toString();
-      redirects.push({
-        from: currentUrl,
-        to: nextUrl,
-        status: response.status,
-      });
-
-      currentUrl = nextUrl;
-      redirectCount++;
-
-      response = await fetch(currentUrl, {
-        method: 'HEAD',
-        signal: controller.signal,
-        redirect: 'manual',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; URLLens/1.0; +https://urllens.com)',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        },
-      });
-    }
-
-    finalUrl = currentUrl;
-    status = response.status;
-    contentType = response.headers.get('content-type') || undefined;
-
-    // If HEAD succeeds, do GET for content analysis
-    if (response.ok) {
-      const getResponse = await fetch(finalUrl, {
-        method: 'GET',
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; URLLens/1.0; +https://urllens.com)',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        },
-      });
-
-      status = getResponse.status;
-      contentType = getResponse.headers.get('content-type') || undefined;
-
-      if (getResponse.ok && contentType?.includes('text/html')) {
-        html = await getResponse.text();
-        accessible = true;
-      }
-    }
-
-    responseTimeMs = Date.now() - startTime;
+    return auditResult;
   } catch (error) {
-    responseTimeMs = Date.now() - startTime;
-
-    if (error instanceof Error) {
-      if (error.name === 'AbortError') {
-        blockedReason = 'Timeout';
-        status = 408;
-      } else if (error.message.includes('ENOTFOUND') || error.message.includes('getaddrinfo')) {
-        blockedReason = 'DNS resolution failed';
-        status = 0;
-      } else if (error.message.includes('ECONNREFUSED')) {
-        blockedReason = 'Connection refused';
-        status = 0;
-      } else if (error.message.includes('certificate') || error.message.includes('SSL')) {
-        blockedReason = 'SSL/TLS error';
-        status = 0;
-      } else {
-        blockedReason = error.message;
-      }
-    }
-  } finally {
-    clearTimeout(timeoutId);
+    // Return error result
+    return {
+      url,
+      finalUrl: url,
+      status: 0,
+      accessible: false,
+      scrapeLikelihoodScore: 0,
+      recommendation: 'blocked',
+      jsRequired: false,
+      botProtections: [],
+      redirects: [],
+      blockedReason: error instanceof Error ? error.message : 'Unknown error',
+      scoreBreakdown: {
+        httpStatus: 0,
+        jsRequired: 0,
+        htmlResponse: 0,
+        botProtection: 0,
+        redirectChain: 0,
+        total: 0,
+      },
+    };
   }
-
-  // Detect bot protections and JS requirements
-  const botProtections = detectBotProtections(html);
-  const jsRequired = detectJSRequired(html);
-
-  // Calculate score
-  const scoreBreakdown = calculateScoreBreakdown({
-    status,
-    jsRequired,
-    contentType,
-    botProtections,
-    redirects,
-  });
-
-  // Determine recommendation
-  const recommendation = getRecommendation(scoreBreakdown.total, accessible, botProtections.length > 0);
-
-  return {
-    url,
-    finalUrl,
-    status,
-    accessible,
-    redirects,
-    blockedReason,
-    contentType,
-    jsRequired,
-    botProtections,
-    responseTimeMs,
-    scrapeLikelihoodScore: scoreBreakdown.total,
-    scoreBreakdown,
-    recommendation,
-  };
 }
 
 /**
- * Detect bot protection mechanisms in HTML content
+ * Maps a score to an audit recommendation
  */
-function detectBotProtections(html: string): string[] {
-  const detected: string[] = [];
-  const lowerHtml = html.toLowerCase();
-
-  for (const protection of BOT_PROTECTION_PATTERNS) {
-    for (const pattern of protection.patterns) {
-      if (lowerHtml.includes(pattern.toLowerCase())) {
-        if (!detected.includes(protection.name)) {
-          detected.push(protection.name);
-        }
-        break;
-      }
-    }
+function mapScoreToRecommendation(score: number, result: AnalyzerResult): AuditRecommendation {
+  // Check for blocking conditions first
+  if (result.error || result.status === 0) {
+    return 'blocked';
   }
-
-  // Check for challenge pages
-  if (
-    lowerHtml.includes('checking your browser') ||
-    lowerHtml.includes('please wait') ||
-    lowerHtml.includes('just a moment') ||
-    lowerHtml.includes('ddos protection')
-  ) {
-    if (!detected.includes('Challenge Page')) {
-      detected.push('Challenge Page');
-    }
-  }
-
-  return detected;
-}
-
-/**
- * Detect if JavaScript is required to render content
- */
-function detectJSRequired(html: string): boolean {
-  const lowerHtml = html.toLowerCase();
-
-  // Check for JS-required patterns
-  for (const pattern of JS_REQUIRED_PATTERNS) {
-    if (lowerHtml.includes(pattern.toLowerCase())) {
-      return true;
-    }
-  }
-
-  // Check if body is mostly empty (likely SPA)
-  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-  if (bodyMatch) {
-    const bodyContent = bodyMatch[1].replace(/<script[\s\S]*?<\/script>/gi, '').trim();
-    // If body content is very short, likely needs JS
-    if (bodyContent.length < 100) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-// ============================================================================
-// Scoring Functions
-// ============================================================================
-
-interface ScoreInput {
-  status: number;
-  jsRequired: boolean;
-  contentType?: string;
-  botProtections: string[];
-  redirects: AuditRedirect[];
-}
-
-/**
- * Calculate detailed score breakdown
- */
-function calculateScoreBreakdown(input: ScoreInput): ScoreBreakdown {
-  const breakdown: ScoreBreakdown = {
-    httpStatus: 0,
-    jsRequired: 0,
-    htmlResponse: 0,
-    botProtection: 0,
-    redirectChain: 0,
-    total: 0,
-  };
-
-  // HTTP Status (max 40 points)
-  if (input.status === 200) {
-    breakdown.httpStatus = 40;
-  } else if (input.status >= 200 && input.status < 300) {
-    breakdown.httpStatus = 30;
-  } else if (input.status >= 300 && input.status < 400) {
-    breakdown.httpStatus = 20;
-  } else if (input.status === 403 || input.status === 429) {
-    breakdown.httpStatus = 5;
-  } else if (input.status >= 400) {
-    breakdown.httpStatus = 0;
-  }
-
-  // JavaScript requirement (max 20 points)
-  breakdown.jsRequired = input.jsRequired ? 0 : 20;
-
-  // HTML response (max 15 points)
-  if (input.contentType?.includes('text/html')) {
-    breakdown.htmlResponse = 15;
-  } else if (input.contentType?.includes('application/xhtml')) {
-    breakdown.htmlResponse = 15;
-  } else if (input.contentType) {
-    breakdown.htmlResponse = 5;
-  }
-
-  // Bot protection (max 15 points)
-  if (input.botProtections.length === 0) {
-    breakdown.botProtection = 15;
-  } else if (input.botProtections.length === 1) {
-    breakdown.botProtection = 5;
-  } else {
-    breakdown.botProtection = 0;
-  }
-
-  // Redirect chain (max 10 points)
-  if (input.redirects.length === 0) {
-    breakdown.redirectChain = 10;
-  } else if (input.redirects.length <= 2) {
-    breakdown.redirectChain = 8;
-  } else if (input.redirects.length <= 4) {
-    breakdown.redirectChain = 4;
-  } else {
-    breakdown.redirectChain = 0;
-  }
-
-  // Calculate total
-  breakdown.total =
-    breakdown.httpStatus +
-    breakdown.jsRequired +
-    breakdown.htmlResponse +
-    breakdown.botProtection +
-    breakdown.redirectChain;
-
-  return breakdown;
-}
-
-/**
- * Get recommendation based on score and accessibility
- */
-function getRecommendation(
-  score: number,
-  accessible: boolean,
-  hasBotProtection: boolean
-): AuditRecommendation {
-  if (!accessible) {
+  if (result.status >= 400) {
     return 'blocked';
   }
 
+  // Map score to recommendation
   if (score >= 85) {
-    return 'best_entry_point';
-  } else if (score >= 70) {
+    // Check if this could be a best entry point
+    if (!result.jsHints && result.botProtections.length === 0 && result.redirects.length <= 1) {
+      return 'best_entry_point';
+    }
     return 'good';
-  } else if (score >= 50) {
+  }
+  if (score >= 70) {
+    return 'good';
+  }
+  if (score >= 50) {
     return 'moderate';
-  } else if (hasBotProtection) {
-    return 'blocked';
-  } else {
+  }
+  if (score >= 30) {
     return 'challenging';
   }
+  return 'blocked';
+}
+
+/**
+ * Gets blocked reason from analysis result
+ */
+function getBlockedReason(result: AnalyzerResult): string | undefined {
+  if (result.status === 403) {
+    return 'Access forbidden (403)';
+  }
+  if (result.status === 401) {
+    return 'Authentication required (401)';
+  }
+  if (result.status === 404) {
+    return 'Page not found (404)';
+  }
+  if (result.status === 429) {
+    return 'Rate limited (429)';
+  }
+  if (result.status >= 500) {
+    return `Server error (${result.status})`;
+  }
+  if (result.botProtections.some(bp => ['cloudflare', 'datadome', 'perimeterx', 'imperva'].includes(bp.type))) {
+    return 'Protected by WAF/bot detection';
+  }
+  return undefined;
 }
 
 // ============================================================================
@@ -367,7 +163,48 @@ function getRecommendation(
 // ============================================================================
 
 /**
- * Process multiple URLs with controlled concurrency
+ * Process a batch of URLs concurrently
+ */
+async function processBatch(
+  urls: string[],
+  signal?: AbortSignal
+): Promise<URLAuditResult[]> {
+  const results = await Promise.all(
+    urls.map(async (url) => {
+      // Check for abort signal
+      if (signal?.aborted) {
+        return {
+          url,
+          finalUrl: url,
+          status: 0,
+          accessible: false,
+          scrapeLikelihoodScore: 0,
+          recommendation: 'blocked' as const,
+          jsRequired: false,
+          botProtections: [],
+          redirects: [],
+          blockedReason: 'Audit cancelled',
+          scoreBreakdown: {
+            httpStatus: 0,
+            jsRequired: 0,
+            htmlResponse: 0,
+            botProtection: 0,
+            redirectChain: 0,
+            total: 0,
+          },
+        };
+      }
+
+      return analyzeUrlForAudit(url);
+    })
+  );
+
+  return results;
+}
+
+/**
+ * Process multiple URLs with controlled concurrency and progress updates
+ * Results are sent progressively after each batch completes
  */
 export async function processURLBatch(
   urls: string[],
@@ -375,56 +212,82 @@ export async function processURLBatch(
     concurrency?: number;
     timeoutMs?: number;
     onProgress?: (progress: AuditProgress) => void;
+    signal?: AbortSignal;
   } = {}
 ): Promise<URLAuditResult[]> {
   const {
-    concurrency = AUDIT_LIMITS.concurrency,
-    timeoutMs = AUDIT_LIMITS.timeoutMs,
+    concurrency = AUDIT_CONFIG.batchSize,
     onProgress,
+    signal,
   } = options;
 
-  const results: URLAuditResult[] = [];
-  const totalUrls = urls.length;
-  let completedUrls = 0;
+  const allResults: URLAuditResult[] = [];
+  const totalUrls = Math.min(urls.length, AUDIT_CONFIG.maxUrls);
+  const urlsToProcess = urls.slice(0, AUDIT_CONFIG.maxUrls);
 
-  // Create progress reporter
-  const reportProgress = (status: AuditStatus, currentStep: string) => {
-    if (onProgress) {
-      onProgress({
-        status,
-        currentStep,
-        totalUrls,
-        completedUrls,
-        percentComplete: Math.round((completedUrls / totalUrls) * 100),
-      });
+  // Report initial progress
+  onProgress?.({
+    status: 'testing',
+    currentStep: 'Starting URL analysis...',
+    totalUrls,
+    completedUrls: 0,
+    percentComplete: 0,
+  });
+
+  // Process in batches
+  for (let i = 0; i < totalUrls; i += concurrency) {
+    // Check for abort
+    if (signal?.aborted) {
+      break;
     }
-  };
 
-  reportProgress('testing', 'Starting URL tests...');
+    const batch = urlsToProcess.slice(i, i + concurrency);
+    const batchNumber = Math.floor(i / concurrency) + 1;
+    const totalBatches = Math.ceil(totalUrls / concurrency);
 
-  // Process in batches with concurrency limit
-  for (let i = 0; i < urls.length; i += concurrency) {
-    const batch = urls.slice(i, i + concurrency);
-
-    const batchPromises = batch.map(async (url) => {
-      const result = await testURL(url, timeoutMs);
-      completedUrls++;
-      reportProgress('testing', `Testing URLs (${completedUrls}/${totalUrls})`);
-      return result;
+    // Report progress before batch
+    onProgress?.({
+      status: 'testing',
+      currentStep: `Analyzing batch ${batchNumber} of ${totalBatches}...`,
+      totalUrls,
+      completedUrls: allResults.length,
+      percentComplete: Math.round((allResults.length / totalUrls) * 100),
     });
 
-    const batchResults = await Promise.all(batchPromises);
-    results.push(...batchResults);
+    // Process batch using the same analysis as single URL
+    const batchResults = await processBatch(batch, signal);
+    allResults.push(...batchResults);
+
+    // Report progress after batch with latest results for progressive UI update
+    onProgress?.({
+      status: 'testing',
+      currentStep: `Completed batch ${batchNumber} of ${totalBatches}`,
+      totalUrls,
+      completedUrls: allResults.length,
+      percentComplete: Math.round((allResults.length / totalUrls) * 100),
+      // Include latest batch results for progressive UI updates
+      latestResults: batchResults,
+    });
+
+    // Delay between batches (except for last batch)
+    if (i + concurrency < totalUrls && !signal?.aborted) {
+      await new Promise(resolve => setTimeout(resolve, AUDIT_CONFIG.batchDelayMs));
+    }
   }
 
-  reportProgress('scoring', 'Calculating scores...');
-
   // Sort by score descending
-  results.sort((a, b) => b.scrapeLikelihoodScore - a.scrapeLikelihoodScore);
+  allResults.sort((a, b) => b.scrapeLikelihoodScore - a.scrapeLikelihoodScore);
 
-  reportProgress('completed', 'Audit complete');
+  // Report completion
+  onProgress?.({
+    status: 'completed',
+    currentStep: 'Audit complete',
+    totalUrls,
+    completedUrls: allResults.length,
+    percentComplete: 100,
+  });
 
-  return results;
+  return allResults;
 }
 
 // ============================================================================
@@ -434,63 +297,66 @@ export async function processURLBatch(
 /**
  * Generate audit summary from results
  */
-export function generateAuditSummary(results: URLAuditResult[]) {
+export function generateAuditSummary(results: URLAuditResult[]): AuditSummary {
   const totalUrls = results.length;
-  const accessibleCount = results.filter((r) => r.accessible).length;
-  const blockedCount = results.filter((r) => !r.accessible).length;
+  const accessibleCount = results.filter(r => r.accessible).length;
+  const blockedCount = results.filter(r => !r.accessible).length;
+  const jsRequiredCount = results.filter(r => r.jsRequired).length;
 
-  const accessibleResults = results.filter((r) => r.accessible);
-  const averageScore =
-    accessibleResults.length > 0
-      ? Math.round(
-          accessibleResults.reduce((sum, r) => sum + r.scrapeLikelihoodScore, 0) /
-            accessibleResults.length
-        )
-      : 0;
+  // Calculate average score of accessible URLs
+  const accessibleResults = results.filter(r => r.accessible);
+  const averageScore = accessibleResults.length > 0
+    ? Math.round(accessibleResults.reduce((sum, r) => sum + r.scrapeLikelihoodScore, 0) / accessibleResults.length)
+    : 0;
+
+  // Count recommendations
+  const recommendationBreakdown = {
+    best_entry_point: results.filter(r => r.recommendation === 'best_entry_point').length,
+    good: results.filter(r => r.recommendation === 'good').length,
+    moderate: results.filter(r => r.recommendation === 'moderate').length,
+    challenging: results.filter(r => r.recommendation === 'challenging').length,
+    blocked: results.filter(r => r.recommendation === 'blocked').length,
+  };
 
   // Find best entry points (score >= 80, accessible)
   const bestEntryPoints = results
-    .filter((r) => r.accessible && r.scrapeLikelihoodScore >= 80)
+    .filter(r => r.accessible && r.scrapeLikelihoodScore >= 80)
     .slice(0, 5);
 
-  // Count by status code
-  const byStatus: Record<number, number> = {};
+  // Count bot protections
+  const protectionCounts: Record<string, number> = {};
   for (const result of results) {
-    const status = result.status || 0;
-    byStatus[status] = (byStatus[status] || 0) + 1;
+    for (const protection of result.botProtections) {
+      protectionCounts[protection] = (protectionCounts[protection] || 0) + 1;
+    }
   }
+
+  const commonProtections = Object.entries(protectionCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name, count]) => ({ name, count }));
 
   return {
     totalUrls,
     accessibleCount,
     blockedCount,
     averageScore,
+    jsRequiredCount,
+    recommendationBreakdown,
     bestEntryPoints,
-    byStatus,
+    commonProtections,
   };
 }
 
 // ============================================================================
-// URL Validation
+// URL Validation (reuses normalizeUrl from urlAnalyzer)
 // ============================================================================
 
 /**
- * Validate and normalize a URL
+ * Validate and normalize a URL (reuses existing normalizeUrl)
  */
 export function normalizeURL(input: string): string {
-  let url = input.trim();
-
-  // Add protocol if missing
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    url = 'https://' + url;
-  }
-
-  try {
-    const parsed = new URL(url);
-    return parsed.toString();
-  } catch {
-    throw new Error(`Invalid URL: ${input}`);
-  }
+  return normalizeUrl(input);
 }
 
 /**
@@ -502,7 +368,7 @@ export function validateURLs(urls: string[]): { valid: string[]; invalid: string
 
   for (const url of urls) {
     try {
-      valid.push(normalizeURL(url));
+      valid.push(normalizeUrl(url.trim()));
     } catch {
       invalid.push(url);
     }
@@ -516,7 +382,7 @@ export function validateURLs(urls: string[]): { valid: string[]; invalid: string
  */
 export function extractDomain(url: string): string {
   try {
-    const parsed = new URL(normalizeURL(url));
+    const parsed = new URL(normalizeUrl(url));
     return parsed.hostname;
   } catch {
     return url;
@@ -538,3 +404,9 @@ export function groupURLsByDomain(urls: string[]): Map<string, string[]> {
 
   return groups;
 }
+
+// ============================================================================
+// Export config
+// ============================================================================
+
+export { AUDIT_CONFIG };
