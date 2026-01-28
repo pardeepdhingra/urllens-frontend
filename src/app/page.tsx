@@ -77,11 +77,17 @@ export default async function LandingPage() {
   const user = await getServerUser();
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <Box
+      component="main"
+      sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
+      role="main"
+    >
       <Header user={user ? { email: user.email || '' } : null} />
 
       {/* Hero Section */}
       <Box
+        component="section"
+        aria-label="Hero"
         sx={{
           background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
           color: 'white',
@@ -279,7 +285,7 @@ export default async function LandingPage() {
         }}
       />
 
-      {/* Footer */}
+      {/* Footer with Trust Signals */}
       <Box
         component="footer"
         sx={{
@@ -290,8 +296,58 @@ export default async function LandingPage() {
         }}
       >
         <Container maxWidth="lg">
+          {/* Trust Links */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: 3,
+              mb: 2,
+              flexWrap: 'wrap',
+            }}
+          >
+            <Link
+              href="/privacy"
+              style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.875rem' }}
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              href="/terms"
+              style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.875rem' }}
+            >
+              Terms of Service
+            </Link>
+            <Link
+              href="/about-pardeep"
+              style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.875rem' }}
+            >
+              Contact
+            </Link>
+            <Link
+              href="/features"
+              style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.875rem' }}
+            >
+              Features
+            </Link>
+          </Box>
           <Typography variant="body2" color="text.secondary" align="center">
-            © {new Date().getFullYear()} URL Lens. Built for web scraping enthusiasts.
+            © {new Date().getFullYear()} URL Lens. Built by{' '}
+            <Link
+              href="/about-pardeep"
+              style={{ color: '#2563eb', textDecoration: 'none' }}
+            >
+              Pardeep Dhingra
+            </Link>
+            {' '}for web scraping enthusiasts.
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            align="center"
+            sx={{ display: 'block', mt: 1 }}
+          >
+            Contact: pardeep@galasar.com
           </Typography>
         </Container>
       </Box>

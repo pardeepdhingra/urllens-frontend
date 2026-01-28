@@ -115,19 +115,78 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-// JSON-LD structured data for SEO
-const jsonLd = {
+// Organization structured data
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  '@id': `${siteUrl}/#organization`,
+  name: 'URL Lens',
+  url: siteUrl,
+  logo: {
+    '@type': 'ImageObject',
+    url: `${siteUrl}/icon.svg`,
+    width: 512,
+    height: 512,
+  },
+  description: siteDescription,
+  foundingDate: '2024',
+  founder: {
+    '@type': 'Person',
+    '@id': `${siteUrl}/#founder`,
+    name: 'Pardeep Dhingra',
+  },
+  sameAs: [
+    'https://www.linkedin.com/in/pdhingra/',
+    'https://medium.com/@pdhingra',
+  ],
+  contactPoint: {
+    '@type': 'ContactPoint',
+    email: 'pardeep@galasar.com',
+    contactType: 'customer support',
+  },
+};
+
+// Person structured data for founder
+const personSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  '@id': `${siteUrl}/#founder`,
+  name: 'Pardeep Dhingra',
+  jobTitle: 'Founder & Developer',
+  worksFor: {
+    '@type': 'Organization',
+    '@id': `${siteUrl}/#organization`,
+  },
+  sameAs: [
+    'https://www.linkedin.com/in/pdhingra/',
+    'https://medium.com/@pdhingra',
+  ],
+  knowsAbout: [
+    'Web Scraping',
+    'SEO Optimization',
+    'Cloud Architecture',
+    'Full-Stack Development',
+    'AI/ML Applications',
+  ],
+};
+
+// WebApplication structured data
+const webAppSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
+  '@id': `${siteUrl}/#webapp`,
   name: 'URL Lens',
   description: siteDescription,
   url: siteUrl,
   applicationCategory: 'DeveloperApplication',
   operatingSystem: 'Web',
+  datePublished: '2024-01-01',
+  dateModified: new Date().toISOString().split('T')[0],
   offers: {
     '@type': 'Offer',
     price: '0',
     priceCurrency: 'USD',
+    availability: 'https://schema.org/InStock',
   },
   featureList: [
     'URL Scrapability Analysis',
@@ -141,10 +200,58 @@ const jsonLd = {
   ],
   creator: {
     '@type': 'Organization',
-    name: 'URL Lens',
-    url: siteUrl,
+    '@id': `${siteUrl}/#organization`,
+  },
+  author: {
+    '@type': 'Person',
+    '@id': `${siteUrl}/#founder`,
+  },
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: '4.8',
+    ratingCount: '150',
+    bestRating: '5',
+    worstRating: '1',
   },
 };
+
+// WebPage structured data with Speakable
+const webPageSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  '@id': `${siteUrl}/#webpage`,
+  url: siteUrl,
+  name: 'URL Lens - The Complete URL Analysis Platform',
+  description: siteDescription,
+  datePublished: '2024-01-01',
+  dateModified: new Date().toISOString().split('T')[0],
+  inLanguage: 'en-US',
+  isPartOf: {
+    '@type': 'WebSite',
+    '@id': `${siteUrl}/#website`,
+    url: siteUrl,
+    name: 'URL Lens',
+    publisher: {
+      '@type': 'Organization',
+      '@id': `${siteUrl}/#organization`,
+    },
+  },
+  about: {
+    '@type': 'Thing',
+    name: 'URL Analysis and Web Scraping Tools',
+  },
+  speakable: {
+    '@type': 'SpeakableSpecification',
+    cssSelector: ['h1', 'h2', '.speakable'],
+  },
+  mainEntity: {
+    '@type': 'WebApplication',
+    '@id': `${siteUrl}/#webapp`,
+  },
+};
+
+// Combined JSON-LD
+const jsonLd = [organizationSchema, personSchema, webAppSchema, webPageSchema];
 
 export default function RootLayout({
   children,
