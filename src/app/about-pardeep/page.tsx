@@ -102,12 +102,6 @@ const techStack = [
 
 export default function AboutPardeepPage() {
   const [showEmail, setShowEmail] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  // Trigger animations on mount
-  useState(() => {
-    setMounted(true);
-  });
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#f8fafc' }}>

@@ -25,7 +25,6 @@ import { Header } from '@/components';
 import { getServerUser } from '@/lib/supabase/server';
 import { LandingButtons } from '@/components/LandingButtons';
 import Link from 'next/link';
-import { Button } from '@mui/material';
 
 const features = [
   {
@@ -193,14 +192,16 @@ export default async function LandingPage() {
           A comprehensive toolkit for web scraping analysis, SEO auditing, and URL intelligence
         </Typography>
         <Box sx={{ textAlign: 'center', mb: 6 }}>
-          <Button
-            component={Link}
+          <Link
             href="/features"
-            variant="text"
-            sx={{ textTransform: 'none' }}
+            style={{
+              color: '#2563eb',
+              textDecoration: 'none',
+              fontSize: '1rem',
+            }}
           >
             Learn more about all features →
-          </Button>
+          </Link>
         </Box>
 
         <Grid container spacing={3}>
