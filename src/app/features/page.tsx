@@ -1,6 +1,6 @@
 // ============================================================================
 // URL Lens - Features Page
-// Detailed information about all features
+// Comprehensive showcase of all features with visuals
 // ============================================================================
 
 // Force dynamic rendering since we use cookies for auth
@@ -13,7 +13,6 @@ import {
   Card,
   CardContent,
   Chip,
-  Divider,
   List,
   ListItem,
   ListItemIcon,
@@ -24,7 +23,6 @@ import {
   Speed,
   Shield,
   CameraAlt,
-  Analytics,
   Link as LinkIcon,
   Storage,
   Security,
@@ -37,9 +35,12 @@ import {
   SmartToy,
   Search,
   Public,
+  BatchPrediction,
 } from '@mui/icons-material';
-import { Header } from '@/components';
+import { Header, Footer } from '@/components';
 import { getServerUser } from '@/lib/supabase/server';
+import Image from 'next/image';
+import Link from 'next/link';
 
 interface FeatureSection {
   id: string;
@@ -48,8 +49,12 @@ interface FeatureSection {
   subtitle: string;
   description: string;
   benefits: string[];
-  category: 'core' | 'seo' | 'visual' | 'sharing';
+  category: 'core' | 'seo' | 'visual' | 'sharing' | 'audit';
+  image?: string;
 }
+
+// Check if URL Audit feature is enabled
+const isUnderDevEnabled = process.env.NEXT_PUBLIC_UNDER_DEV === 'true';
 
 const featureSections: FeatureSection[] = [
   {
@@ -67,6 +72,7 @@ const featureSections: FeatureSection[] = [
       'Actionable recommendations',
     ],
     category: 'core',
+    image: '/images/features/scrapability-score.svg',
   },
   {
     id: 'bot-protection',
@@ -83,6 +89,7 @@ const featureSections: FeatureSection[] = [
       'Custom protection pattern matching',
     ],
     category: 'core',
+    image: '/images/features/bot-protection.svg',
   },
   {
     id: 'redirects',
@@ -99,6 +106,7 @@ const featureSections: FeatureSection[] = [
       'Redirect loop detection',
     ],
     category: 'core',
+    image: '/images/features/redirect-chain.svg',
   },
   {
     id: 'visual-analysis',
@@ -115,6 +123,7 @@ const featureSections: FeatureSection[] = [
       'Zoomable screenshot viewer',
     ],
     category: 'visual',
+    image: '/images/features/visual-timeline.svg',
   },
   {
     id: 'seo-analysis',
@@ -132,6 +141,7 @@ const featureSections: FeatureSection[] = [
       'Page speed insights',
     ],
     category: 'seo',
+    image: '/images/features/seo-analysis.svg',
   },
   {
     id: 'aeo-analysis',
@@ -200,6 +210,7 @@ const featureSections: FeatureSection[] = [
       'Marketing attribution insights',
     ],
     category: 'core',
+    image: '/images/features/utm-tracking.svg',
   },
   {
     id: 'headers',
@@ -271,11 +282,32 @@ const featureSections: FeatureSection[] = [
   },
 ];
 
+// URL Audit feature (only shown when enabled)
+const auditFeature: FeatureSection = {
+  id: 'url-audit',
+  icon: BatchPrediction,
+  title: 'Bulk URL Audit',
+  subtitle: 'Analyze Hundreds of URLs at Once',
+  description:
+    'Audit entire websites or URL lists with our powerful batch processing engine. Upload a CSV, paste URLs, or let us discover URLs automatically from sitemaps and robots.txt. Get comprehensive scrapability analysis for every URL with recommendations for the best entry points.',
+  benefits: [
+    'Batch mode: Upload CSV or paste URL lists',
+    'Domain mode: Auto-discover URLs from sitemap',
+    'Scrapability scores for every URL',
+    'Bot protection detection across all URLs',
+    'Best entry point recommendations',
+    'Export results to CSV or JSON',
+  ],
+  category: 'audit',
+  image: '/images/features/url-audit.svg',
+};
+
 const categoryColors = {
   core: '#2563eb',
   seo: '#7c3aed',
   visual: '#059669',
   sharing: '#d97706',
+  audit: '#8b5cf6',
 };
 
 const categoryLabels = {
@@ -283,10 +315,19 @@ const categoryLabels = {
   seo: 'SEO Intelligence',
   visual: 'Visual Analysis',
   sharing: 'Collaboration',
+  audit: 'Bulk Processing',
 };
 
 export default async function FeaturesPage() {
   const user = await getServerUser();
+
+  // Add audit feature if enabled
+  const allFeatures = isUnderDevEnabled
+    ? [auditFeature, ...featureSections]
+    : featureSections;
+
+  // Get unique categories for the current features
+  const activeCategories = [...new Set(allFeatures.map(f => f.category))];
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -295,18 +336,32 @@ export default async function FeaturesPage() {
       {/* Hero Section */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)',
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #2563eb 100%)',
           color: 'white',
-          py: { xs: 6, md: 10 },
+          py: { xs: 8, md: 12 },
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        <Container maxWidth="lg">
+        {/* Background Pattern */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            opacity: 0.05,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+        />
+        <Container maxWidth="lg" sx={{ position: 'relative' }}>
           <Typography
             variant="h1"
             sx={{
-              fontSize: { xs: '2rem', md: '3rem' },
+              fontSize: { xs: '2.5rem', md: '3.5rem' },
               fontWeight: 800,
-              mb: 2,
+              mb: 3,
               textAlign: 'center',
             }}
           >
@@ -320,6 +375,7 @@ export default async function FeaturesPage() {
               textAlign: 'center',
               maxWidth: 800,
               mx: 'auto',
+              lineHeight: 1.6,
             }}
           >
             Comprehensive URL analysis, SEO auditing, and web intelligence tools
@@ -331,100 +387,206 @@ export default async function FeaturesPage() {
       {/* Feature Categories */}
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {Object.entries(categoryLabels).map(([key, label]) => (
+          {activeCategories.map((key) => (
             <Chip
               key={key}
-              label={label}
+              label={categoryLabels[key as keyof typeof categoryLabels]}
               sx={{
                 bgcolor: categoryColors[key as keyof typeof categoryColors],
                 color: 'white',
                 fontWeight: 600,
+                px: 1,
               }}
             />
           ))}
         </Box>
       </Container>
 
-      {/* Features List */}
-      <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
+      {/* Featured Section with Images */}
+      <Box sx={{ bgcolor: '#f8fafc', py: { xs: 6, md: 10 } }}>
+        <Container maxWidth="lg">
+          <Typography variant="h2" align="center" sx={{ mb: 2, fontWeight: 700 }}>
+            Powerful Analysis Tools
+          </Typography>
+          <Typography
+            variant="body1"
+            align="center"
+            color="text.secondary"
+            sx={{ mb: 6, maxWidth: 600, mx: 'auto' }}
+          >
+            Our most popular features with visual demonstrations
+          </Typography>
+
+          {allFeatures
+            .filter((f) => f.image)
+            .map((feature, index) => (
+              <Box key={feature.id} sx={{ mb: 8 }}>
+                <Grid
+                  container
+                  spacing={6}
+                  alignItems="center"
+                  direction={index % 2 === 0 ? 'row' : 'row-reverse'}
+                >
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Box
+                      sx={{
+                        bgcolor: 'white',
+                        borderRadius: 4,
+                        p: 3,
+                        boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
+                        border: '1px solid #e2e8f0',
+                      }}
+                    >
+                      <Image
+                        src={feature.image!}
+                        alt={feature.title}
+                        width={400}
+                        height={300}
+                        style={{ width: '100%', height: 'auto' }}
+                      />
+                    </Box>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Chip
+                      label={categoryLabels[feature.category]}
+                      size="small"
+                      sx={{
+                        bgcolor: categoryColors[feature.category],
+                        color: 'white',
+                        fontWeight: 600,
+                        mb: 2,
+                      }}
+                    />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                      <Box
+                        sx={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 2,
+                          bgcolor: categoryColors[feature.category],
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <feature.icon sx={{ color: 'white', fontSize: 28 }} />
+                      </Box>
+                      <Box>
+                        <Typography variant="h4" fontWeight={700}>
+                          {feature.title}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {feature.subtitle}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.7 }}>
+                      {feature.description}
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {feature.benefits.slice(0, 4).map((benefit, i) => (
+                        <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <CheckCircle sx={{ fontSize: 16, color: categoryColors[feature.category] }} />
+                          <Typography variant="body2" color="text.secondary">
+                            {benefit}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Box>
+            ))}
+        </Container>
+      </Box>
+
+      {/* All Features List */}
+      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
+        <Typography variant="h2" align="center" sx={{ mb: 2, fontWeight: 700 }}>
+          Complete Feature List
+        </Typography>
+        <Typography
+          variant="body1"
+          align="center"
+          color="text.secondary"
+          sx={{ mb: 6, maxWidth: 600, mx: 'auto' }}
+        >
+          Every tool you need for comprehensive URL analysis
+        </Typography>
+
         <Grid container spacing={4}>
-          {featureSections.map((feature) => (
-            <Grid size={{ xs: 12 }} key={feature.id}>
+          {allFeatures.map((feature) => (
+            <Grid size={{ xs: 12, md: 6 }} key={feature.id}>
               <Card
                 id={feature.id}
                 sx={{
+                  height: '100%',
                   borderLeft: `4px solid ${categoryColors[feature.category]}`,
+                  transition: 'box-shadow 0.2s',
                   '&:hover': {
                     boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
                   },
                 }}
               >
-                <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-                  <Grid container spacing={4}>
-                    <Grid size={{ xs: 12, md: 8 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                        <Box
-                          sx={{
-                            width: 56,
-                            height: 56,
-                            borderRadius: 2,
-                            bgcolor: categoryColors[feature.category],
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                    <Box
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 2,
+                        bgcolor: categoryColors[feature.category],
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <feature.icon sx={{ color: 'white', fontSize: 24 }} />
+                    </Box>
+                    <Box>
+                      <Typography variant="h6" fontWeight={700}>
+                        {feature.title}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {feature.subtitle}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    {feature.description}
+                  </Typography>
+                  <Chip
+                    label={categoryLabels[feature.category]}
+                    size="small"
+                    sx={{
+                      bgcolor: `${categoryColors[feature.category]}15`,
+                      color: categoryColors[feature.category],
+                      fontWeight: 600,
+                      mb: 2,
+                    }}
+                  />
+                  <List dense disablePadding>
+                    {feature.benefits.map((benefit, index) => (
+                      <ListItem key={index} disablePadding sx={{ py: 0.25 }}>
+                        <ListItemIcon sx={{ minWidth: 28 }}>
+                          <CheckCircle
+                            sx={{
+                              fontSize: 16,
+                              color: categoryColors[feature.category],
+                            }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={benefit}
+                          primaryTypographyProps={{
+                            variant: 'body2',
+                            color: 'text.secondary',
                           }}
-                        >
-                          <feature.icon sx={{ color: 'white', fontSize: 28 }} />
-                        </Box>
-                        <Box>
-                          <Typography variant="h5" fontWeight={700}>
-                            {feature.title}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {feature.subtitle}
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                        {feature.description}
-                      </Typography>
-                      <Chip
-                        label={categoryLabels[feature.category]}
-                        size="small"
-                        sx={{
-                          bgcolor: `${categoryColors[feature.category]}20`,
-                          color: categoryColors[feature.category],
-                          fontWeight: 600,
-                        }}
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 4 }}>
-                      <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-                        Key Benefits
-                      </Typography>
-                      <List dense disablePadding>
-                        {feature.benefits.map((benefit, index) => (
-                          <ListItem key={index} disablePadding sx={{ py: 0.5 }}>
-                            <ListItemIcon sx={{ minWidth: 32 }}>
-                              <CheckCircle
-                                sx={{
-                                  fontSize: 18,
-                                  color: categoryColors[feature.category],
-                                }}
-                              />
-                            </ListItemIcon>
-                            <ListItemText
-                              primary={benefit}
-                              primaryTypographyProps={{
-                                variant: 'body2',
-                                color: 'text.secondary',
-                              }}
-                            />
-                          </ListItem>
-                        ))}
-                      </List>
-                    </Grid>
-                  </Grid>
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
                 </CardContent>
               </Card>
             </Grid>
@@ -433,92 +595,76 @@ export default async function FeaturesPage() {
       </Container>
 
       {/* CTA Section */}
-      <Box sx={{ bgcolor: '#f8fafc', py: { xs: 6, md: 8 } }}>
+      <Box sx={{ bgcolor: '#0f172a', color: 'white', py: { xs: 8, md: 10 } }}>
         <Container maxWidth="md" sx={{ textAlign: 'center' }}>
           <Typography variant="h3" gutterBottom fontWeight={700}>
             Ready to Analyze?
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+          <Typography variant="body1" sx={{ mb: 4, opacity: 0.9 }}>
             Start using all these features today. Create your free account and analyze any URL.
           </Typography>
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
             {user ? (
-              <a href="/dashboard" style={{ textDecoration: 'none' }}>
+              <Link href="/dashboard" style={{ textDecoration: 'none' }}>
                 <Box
                   component="span"
                   sx={{
                     display: 'inline-block',
-                    bgcolor: 'primary.main',
-                    color: 'white',
+                    bgcolor: 'white',
+                    color: '#0f172a',
                     px: 4,
                     py: 1.5,
                     borderRadius: 2,
                     fontWeight: 600,
-                    '&:hover': { bgcolor: 'primary.dark' },
+                    '&:hover': { bgcolor: '#f1f5f9' },
                   }}
                 >
                   Go to Dashboard
                 </Box>
-              </a>
+              </Link>
             ) : (
               <>
-                <a href="/signup" style={{ textDecoration: 'none' }}>
+                <Link href="/signup" style={{ textDecoration: 'none' }}>
                   <Box
                     component="span"
                     sx={{
                       display: 'inline-block',
-                      bgcolor: 'primary.main',
+                      bgcolor: '#3b82f6',
                       color: 'white',
                       px: 4,
                       py: 1.5,
                       borderRadius: 2,
                       fontWeight: 600,
-                      '&:hover': { bgcolor: 'primary.dark' },
+                      '&:hover': { bgcolor: '#2563eb' },
                     }}
                   >
                     Get Started Free
                   </Box>
-                </a>
-                <a href="/login" style={{ textDecoration: 'none' }}>
+                </Link>
+                <Link href="/login" style={{ textDecoration: 'none' }}>
                   <Box
                     component="span"
                     sx={{
                       display: 'inline-block',
-                      border: '2px solid',
-                      borderColor: 'primary.main',
-                      color: 'primary.main',
+                      border: '2px solid white',
+                      color: 'white',
                       px: 4,
                       py: 1.5,
                       borderRadius: 2,
                       fontWeight: 600,
-                      '&:hover': { bgcolor: 'primary.main', color: 'white' },
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
                     }}
                   >
                     Sign In
                   </Box>
-                </a>
+                </Link>
               </>
             )}
           </Box>
         </Container>
       </Box>
 
-      {/* Footer */}
-      <Box
-        component="footer"
-        sx={{
-          py: 4,
-          mt: 'auto',
-          borderTop: '1px solid #e2e8f0',
-          bgcolor: 'white',
-        }}
-      >
-        <Container maxWidth="lg">
-          <Typography variant="body2" color="text.secondary" align="center">
-            © {new Date().getFullYear()} URL Lens. Built for web scraping enthusiasts and SEO professionals.
-          </Typography>
-        </Container>
-      </Box>
+      <Footer />
     </Box>
   );
 }

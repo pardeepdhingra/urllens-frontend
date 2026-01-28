@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <!-- Shield Background -->
+  <path d="M200 30 L330 70 L330 150 C330 220 200 270 200 270 C200 270 70 220 70 150 L70 70 Z" fill="#1e3a5f" stroke="#3b82f6" stroke-width="3"/>
+  <path d="M200 50 L310 85 L310 145 C310 205 200 250 200 250 C200 250 90 205 90 145 L90 85 Z" fill="#0f172a"/>
+
+  <!-- Shield Icon -->
+  <path d="M200 80 L270 105 L270 145 C270 185 200 215 200 215 C200 215 130 185 130 145 L130 105 Z" fill="none" stroke="#3b82f6" stroke-width="2"/>
+
+  <!-- Detection Indicators -->
+  <circle cx="160" cy="130" r="15" fill="#22c55e" opacity="0.2"/>
+  <path d="M152 130 L158 136 L170 124" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <circle cx="200" cy="160" r="15" fill="#f59e0b" opacity="0.2"/>
+  <path d="M200 152 L200 162 M200 166 L200 167" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+
+  <circle cx="240" cy="130" r="15" fill="#ef4444" opacity="0.2"/>
+  <path d="M234 124 L246 136 M246 124 L234 136" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Protection Types Labels -->
+  <rect x="30" y="110" width="80" height="24" rx="12" fill="#1e293b"/>
+  <text x="70" y="126" fill="#e2e8f0" font-size="9" text-anchor="middle" font-family="system-ui">Cloudflare</text>
+
+  <rect x="290" y="110" width="80" height="24" rx="12" fill="#1e293b"/>
+  <text x="330" y="126" fill="#e2e8f0" font-size="9" text-anchor="middle" font-family="system-ui">reCAPTCHA</text>
+
+  <rect x="30" y="170" width="80" height="24" rx="12" fill="#1e293b"/>
+  <text x="70" y="186" fill="#e2e8f0" font-size="9" text-anchor="middle" font-family="system-ui">DataDome</text>
+
+  <rect x="290" y="170" width="80" height="24" rx="12" fill="#1e293b"/>
+  <text x="330" y="186" fill="#e2e8f0" font-size="9" text-anchor="middle" font-family="system-ui">PerimeterX</text>
+
+  <!-- Connecting Lines -->
+  <line x1="110" y1="122" x2="145" y2="130" stroke="#3b82f6" stroke-width="1" stroke-dasharray="4"/>
+  <line x1="255" y1="130" x2="290" y2="122" stroke="#3b82f6" stroke-width="1" stroke-dasharray="4"/>
+  <line x1="110" y1="182" x2="145" y2="155" stroke="#3b82f6" stroke-width="1" stroke-dasharray="4"/>
+  <line x1="255" y1="155" x2="290" y2="182" stroke="#3b82f6" stroke-width="1" stroke-dasharray="4"/>
+
+  <!-- Decorative Dots -->
+  <circle cx="50" cy="60" r="4" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="350" cy="60" r="4" fill="#8b5cf6" opacity="0.5"/>
+  <circle cx="50" cy="240" r="4" fill="#22c55e" opacity="0.5"/>
+  <circle cx="350" cy="240" r="4" fill="#f59e0b" opacity="0.5"/>
+</svg>

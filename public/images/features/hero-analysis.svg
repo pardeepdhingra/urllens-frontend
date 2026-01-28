@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 400" fill="none">
+  <!-- Background -->
+  <rect width="500" height="400" fill="transparent"/>
+
+  <!-- Browser Window -->
+  <rect x="50" y="40" width="400" height="280" rx="12" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+
+  <!-- Browser Header -->
+  <rect x="50" y="40" width="400" height="40" rx="12" fill="#334155"/>
+  <circle cx="75" cy="60" r="6" fill="#ef4444"/>
+  <circle cx="95" cy="60" r="6" fill="#f59e0b"/>
+  <circle cx="115" cy="60" r="6" fill="#22c55e"/>
+
+  <!-- URL Bar -->
+  <rect x="140" y="50" width="260" height="20" rx="4" fill="#1e293b"/>
+  <text x="150" y="64" fill="#94a3b8" font-size="10" font-family="system-ui">https://example.com/page</text>
+
+  <!-- Content Area -->
+  <rect x="70" y="100" width="160" height="200" rx="8" fill="#0f172a"/>
+
+  <!-- Score Circle -->
+  <circle cx="150" cy="170" r="50" fill="none" stroke="#334155" stroke-width="8"/>
+  <circle cx="150" cy="170" r="50" fill="none" stroke="#22c55e" stroke-width="8" stroke-dasharray="251" stroke-dashoffset="50" stroke-linecap="round" transform="rotate(-90 150 170)"/>
+  <text x="150" y="180" fill="#22c55e" font-size="32" font-weight="bold" text-anchor="middle" font-family="system-ui">85</text>
+  <text x="150" y="240" fill="#94a3b8" font-size="11" text-anchor="middle" font-family="system-ui">Scrapability Score</text>
+
+  <!-- Analysis Panel -->
+  <rect x="250" y="100" width="180" height="200" rx="8" fill="#0f172a"/>
+
+  <!-- Analysis Items -->
+  <rect x="265" y="115" width="150" height="28" rx="4" fill="#1e293b"/>
+  <circle cx="280" cy="129" r="6" fill="#22c55e"/>
+  <text x="295" y="133" fill="#e2e8f0" font-size="10" font-family="system-ui">Status: 200 OK</text>
+
+  <rect x="265" y="153" width="150" height="28" rx="4" fill="#1e293b"/>
+  <circle cx="280" cy="167" r="6" fill="#f59e0b"/>
+  <text x="295" y="171" fill="#e2e8f0" font-size="10" font-family="system-ui">2 Redirects</text>
+
+  <rect x="265" y="191" width="150" height="28" rx="4" fill="#1e293b"/>
+  <circle cx="280" cy="205" r="6" fill="#22c55e"/>
+  <text x="295" y="209" fill="#e2e8f0" font-size="10" font-family="system-ui">No Bot Protection</text>
+
+  <rect x="265" y="229" width="150" height="28" rx="4" fill="#1e293b"/>
+  <circle cx="280" cy="243" r="6" fill="#3b82f6"/>
+  <text x="295" y="247" fill="#e2e8f0" font-size="10" font-family="system-ui">SEO Score: 78</text>
+
+  <rect x="265" y="267" width="150" height="28" rx="4" fill="#1e293b"/>
+  <circle cx="280" cy="281" r="6" fill="#8b5cf6"/>
+  <text x="295" y="285" fill="#e2e8f0" font-size="10" font-family="system-ui">Response: 245ms</text>
+
+  <!-- Floating Elements -->
+  <circle cx="460" cy="100" r="25" fill="#3b82f6" opacity="0.2"/>
+  <circle cx="40" cy="180" r="20" fill="#8b5cf6" opacity="0.2"/>
+  <circle cx="480" cy="280" r="15" fill="#22c55e" opacity="0.2"/>
+
+  <!-- Decorative Lines -->
+  <path d="M30 350 Q 100 330 180 350" stroke="#3b82f6" stroke-width="2" fill="none" opacity="0.3"/>
+  <path d="M320 350 Q 390 330 470 350" stroke="#8b5cf6" stroke-width="2" fill="none" opacity="0.3"/>
+</svg>
