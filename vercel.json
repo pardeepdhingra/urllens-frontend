@@ -11,8 +11,7 @@
     }
   },
   "env": {
-    "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD": "1",
-    "DISABLE_VISUAL_ANALYSIS": "true"
+    "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD": "1"
   },
   "headers": [
     {
