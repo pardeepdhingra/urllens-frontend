@@ -12,3 +12,4 @@ export { LandingButtons } from './LandingButtons';
 export { SharedResultDisplay } from './SharedResultDisplay';
 export { EnhancedResultDisplay } from './EnhancedResultDisplay';
 export { RedirectTimeline } from './RedirectTimeline';
+export { default as FAQSection, faqData } from './FAQSection';

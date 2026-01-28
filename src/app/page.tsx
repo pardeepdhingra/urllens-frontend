@@ -10,18 +10,16 @@ import Grid from '@mui/material/Grid';
 import {
   Speed,
   Shield,
-  Code,
-  TrendingUp,
-  Search,
-  History,
   CameraAlt,
   Analytics,
   Link as LinkIcon,
   Share,
   Storage,
   Security,
+  TrendingUp,
+  Search,
 } from '@mui/icons-material';
-import { Header } from '@/components';
+import { Header, FAQSection, faqData } from '@/components';
 import { getServerUser } from '@/lib/supabase/server';
 import { LandingButtons } from '@/components/LandingButtons';
 import Link from 'next/link';
@@ -245,6 +243,9 @@ export default async function LandingPage() {
         </Grid>
       </Container>
 
+      {/* FAQ Section */}
+      <FAQSection />
+
       {/* CTA Section */}
       <Box sx={{ bgcolor: '#f8fafc', py: { xs: 6, md: 8 } }}>
         <Container maxWidth="sm" sx={{ textAlign: 'center' }}>
@@ -257,6 +258,25 @@ export default async function LandingPage() {
           <LandingButtons isLoggedIn={!!user} variant="cta" />
         </Container>
       </Box>
+
+      {/* FAQ JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faqData.map((faq) => ({
+              '@type': 'Question',
+              name: faq.question,
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: faq.answer,
+              },
+            })),
+          }),
+        }}
+      />
 
       {/* Footer */}
       <Box
