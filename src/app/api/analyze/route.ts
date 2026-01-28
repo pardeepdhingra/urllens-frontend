@@ -167,12 +167,15 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeRe
 
     if (saveError) {
       console.error('Error saving analysis:', saveError);
+      console.error('Save error details:', JSON.stringify(saveError, null, 2));
+      console.error('Data being saved:', JSON.stringify(analysisData, null, 2).substring(0, 1000));
       // Return the analysis even if saving fails, but mark as not saved
       // This prevents share functionality from trying to share unsaved analysis
       return NextResponse.json(
         {
           success: true,
           saved: false,
+          saveError: saveError.message || 'Unknown database error',
           data: {
             ...analysisData,
             id: '', // Empty ID since not saved to database

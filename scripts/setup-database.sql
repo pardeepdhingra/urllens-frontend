@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS url_analyses (
   rate_limit_info JSONB,
   utm_analysis JSONB,
   visual_analysis JSONB,
+  seo_analysis JSONB,
   share_id TEXT UNIQUE,
   score INTEGER DEFAULT 0,
   recommendation TEXT,
@@ -112,6 +113,12 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns
     WHERE table_name = 'url_analyses' AND column_name = 'utm_analysis') THEN
     ALTER TABLE url_analyses ADD COLUMN utm_analysis JSONB;
+  END IF;
+
+  -- Add seo_analysis column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'url_analyses' AND column_name = 'seo_analysis') THEN
+    ALTER TABLE url_analyses ADD COLUMN seo_analysis JSONB;
   END IF;
 
   -- Add share_id column

@@ -190,6 +190,7 @@ function normalizeUrlForBrowser(url: string): string {
 /**
  * Main visual analysis function
  * Launches a headless browser, follows redirects step by step, and captures screenshots at each hop
+ * Supports both local Playwright and remote Browserless.io
  */
 export async function analyzeUrlVisually(
   inputUrl: string
@@ -218,6 +219,10 @@ export async function analyzeUrlVisually(
   // Normalize URL to ensure it has a protocol
   const normalizedUrl = normalizeUrlForBrowser(inputUrl);
 
+  // Check for Browserless.io API key (for serverless environments like Vercel)
+  const browserlessApiKey = process.env.BROWSERLESS_API_KEY;
+  const useBrowserless = !!browserlessApiKey;
+
   try {
     // Dynamically import Playwright to avoid loading it when not needed
     // This is critical for serverless deployments where Playwright may not be available
@@ -226,46 +231,61 @@ export async function analyzeUrlVisually(
       const playwright = await import('playwright');
       chromium = playwright.chromium;
     } catch (importError) {
-      console.warn('Playwright is not available in this environment:', importError);
-      return {
-        screenshots: [],
-        total_redirects: 0,
-        final_url: inputUrl,
-        blocked: false,
-        analysis_duration_ms: Date.now() - startTime,
-        disabled: true,
-        disabled_reason: 'Playwright browser automation is not available in this deployment environment.',
+      // If Playwright isn't available and we don't have Browserless, we can't proceed
+      if (!useBrowserless) {
+        console.warn('Playwright is not available and no Browserless API key configured:', importError);
+        return {
+          screenshots: [],
+          total_redirects: 0,
+          final_url: inputUrl,
+          blocked: false,
+          analysis_duration_ms: Date.now() - startTime,
+          disabled: true,
+          disabled_reason: 'Visual analysis requires either local Playwright or a Browserless.io API key.',
+        };
+      }
+      // We have Browserless, so we can still try to connect
+      const playwright = await import('playwright-core');
+      chromium = playwright.chromium;
+    }
+
+    // Connect to Browserless.io or launch local browser
+    if (useBrowserless) {
+      console.log('Connecting to Browserless.io...');
+      const browserlessUrl = `wss://chrome.browserless.io?token=${browserlessApiKey}`;
+      browser = await chromium.connectOverCDP(browserlessUrl);
+      console.log('Connected to Browserless.io successfully');
+    } else {
+      // Try to find system Chrome if Playwright's chromium is not available
+      const chromeExecutable = findChromeExecutable();
+
+      const launchOptions: LaunchOptions = {
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--disable-gpu',
+          '--window-size=1280,800',
+          '--force-device-scale-factor=1',
+          '--hide-scrollbars',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding',
+        ],
       };
+
+      // Use system Chrome if available
+      if (chromeExecutable) {
+        launchOptions.executablePath = chromeExecutable;
+        console.log('Using system Chrome:', chromeExecutable);
+      }
+
+      // Launch browser
+      browser = await chromium.launch(launchOptions);
+      console.log('Launched local browser');
     }
-
-    // Try to find system Chrome if Playwright's chromium is not available
-    const chromeExecutable = findChromeExecutable();
-
-    const launchOptions: LaunchOptions = {
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--disable-gpu',
-        '--window-size=1280,800',
-        '--force-device-scale-factor=1',
-        '--hide-scrollbars',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-      ],
-    };
-
-    // Use system Chrome if available
-    if (chromeExecutable) {
-      launchOptions.executablePath = chromeExecutable;
-      console.log('Using system Chrome:', chromeExecutable);
-    }
-
-    // Launch browser
-    browser = await chromium.launch(launchOptions);
 
     const context = await browser.newContext({
       viewport: CONFIG.viewport,
