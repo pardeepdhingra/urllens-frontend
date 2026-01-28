@@ -198,8 +198,18 @@ export async function analyzeUrlVisually(
   const startTime = Date.now();
 
   // Check if visual analysis is explicitly disabled via env var
-  if (process.env.DISABLE_VISUAL_ANALYSIS === 'true') {
-    console.log('Visual analysis is disabled via DISABLE_VISUAL_ANALYSIS=true env var');
+  // Handle different cases: 'true', 'TRUE', 'True', '1', etc.
+  const disableVisualAnalysis = process.env.DISABLE_VISUAL_ANALYSIS?.toLowerCase().trim();
+  const isDisabled = disableVisualAnalysis === 'true' || disableVisualAnalysis === '1';
+
+  console.log('Visual analysis check:', {
+    envValue: process.env.DISABLE_VISUAL_ANALYSIS,
+    normalized: disableVisualAnalysis,
+    isDisabled,
+  });
+
+  if (isDisabled) {
+    console.log('Visual analysis is disabled via DISABLE_VISUAL_ANALYSIS env var');
     return {
       screenshots: [],
       total_redirects: 0,
@@ -220,13 +230,15 @@ export async function analyzeUrlVisually(
   const normalizedUrl = normalizeUrlForBrowser(inputUrl);
 
   // Check for Browserless.io API key (for serverless environments like Vercel)
-  const browserlessApiKey = process.env.BROWSERLESS_API_KEY;
-  const useBrowserless = !!browserlessApiKey;
+  const browserlessApiKey = process.env.BROWSERLESS_API_KEY?.trim();
+  const useBrowserless = !!browserlessApiKey && browserlessApiKey.length > 0;
 
   console.log('Visual analysis starting...', {
+    url: inputUrl,
     useBrowserless,
     hasBrowserlessKey: !!browserlessApiKey,
     keyLength: browserlessApiKey?.length || 0,
+    keyPrefix: browserlessApiKey?.substring(0, 8) || 'N/A',
   });
 
   try {
