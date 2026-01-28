@@ -426,8 +426,8 @@ export async function analyzeUrlVisually(
       const normalizeForComparison = (url: string): string => {
         try {
           const u = new URL(url);
-          let host = u.host.replace(/^www\./, '');
-          let path = u.pathname.replace(/\/$/, '') || '/';
+          const host = u.host.replace(/^www\./, '');
+          const path = u.pathname.replace(/\/$/, '') || '/';
           return `${host}${path}${u.search}`;
         } catch {
           return url;

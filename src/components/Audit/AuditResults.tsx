@@ -102,7 +102,7 @@ function StatusIcon({ accessible }: { accessible: boolean }) {
 function SummaryCards({ summary }: { summary: AuditSummary }) {
   return (
     <Grid container spacing={2} sx={{ mb: 3 }}>
-      <Grid item xs={6} sm={3}>
+      <Grid size={{ xs: 6, sm: 3 }}>
         <Paper elevation={0} sx={{ p: 2, border: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
           <Typography variant="h4" fontWeight={700} color="primary.main">
             {summary.totalUrls}
@@ -112,7 +112,7 @@ function SummaryCards({ summary }: { summary: AuditSummary }) {
           </Typography>
         </Paper>
       </Grid>
-      <Grid item xs={6} sm={3}>
+      <Grid size={{ xs: 6, sm: 3 }}>
         <Paper elevation={0} sx={{ p: 2, border: '1px solid', borderColor: 'success.main', textAlign: 'center' }}>
           <Typography variant="h4" fontWeight={700} color="success.main">
             {summary.accessibleCount}
@@ -122,7 +122,7 @@ function SummaryCards({ summary }: { summary: AuditSummary }) {
           </Typography>
         </Paper>
       </Grid>
-      <Grid item xs={6} sm={3}>
+      <Grid size={{ xs: 6, sm: 3 }}>
         <Paper elevation={0} sx={{ p: 2, border: '1px solid', borderColor: 'error.main', textAlign: 'center' }}>
           <Typography variant="h4" fontWeight={700} color="error.main">
             {summary.blockedCount}
@@ -132,7 +132,7 @@ function SummaryCards({ summary }: { summary: AuditSummary }) {
           </Typography>
         </Paper>
       </Grid>
-      <Grid item xs={6} sm={3}>
+      <Grid size={{ xs: 6, sm: 3 }}>
         <Paper elevation={0} sx={{ p: 2, border: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
           <Typography variant="h4" fontWeight={700}>
             {summary.averageScore}
@@ -232,7 +232,7 @@ function ResultRow({ result }: { result: URLAuditResult }) {
             <Box sx={{ py: 2, px: 3 }}>
               <Grid container spacing={3}>
                 {/* URL Details */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Typography variant="subtitle2" gutterBottom>
                     URL Details
                   </Typography>
@@ -257,7 +257,7 @@ function ResultRow({ result }: { result: URLAuditResult }) {
                 </Grid>
 
                 {/* Detections */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Detections
                   </Typography>
@@ -294,7 +294,7 @@ function ResultRow({ result }: { result: URLAuditResult }) {
 
                 {/* Redirects */}
                 {result.redirects.length > 0 && (
-                  <Grid item xs={12}>
+                  <Grid size={12}>
                     <Typography variant="subtitle2" gutterBottom>
                       Redirect Chain ({result.redirects.length} redirect{result.redirects.length !== 1 ? 's' : ''})
                     </Typography>
@@ -312,7 +312,7 @@ function ResultRow({ result }: { result: URLAuditResult }) {
                 )}
 
                 {/* Score Breakdown */}
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Typography variant="subtitle2" gutterBottom>
                     Score Breakdown
                   </Typography>
@@ -421,7 +421,7 @@ export default function AuditResults({ results, summary }: AuditResultsProps) {
   };
 
   const handleExportCSV = () => {
-    const csv = resultsToCSV(results, [
+    const csv = resultsToCSV(results as unknown as Record<string, unknown>[], [
       { key: 'url', header: 'URL' },
       { key: 'status', header: 'Status' },
       { key: 'accessible', header: 'Accessible' },

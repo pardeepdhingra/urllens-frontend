@@ -62,8 +62,8 @@ describe('Audit API', () => {
     jest.resetModules();
 
     // Import POST handler
-    const module = await import('@/app/api/audit/route');
-    POST = module.POST;
+    const auditRoute = await import('@/app/api/audit/route');
+    POST = auditRoute.POST;
 
     // Setup default mock returns
     mockValidateURLs.mockReturnValue({
@@ -115,10 +115,10 @@ describe('Audit API', () => {
       // Disable feature
       process.env.UNDER_DEV = 'false';
       jest.resetModules();
-      const module = await import('@/app/api/audit/route');
+      const auditRoute = await import('@/app/api/audit/route');
 
       const request = createRequest({ mode: 'batch', urls: ['https://example.com'] });
-      const response = await module.POST(request);
+      const response = await auditRoute.POST(request);
       const data = await response.json();
 
       expect(response.status).toBe(403);

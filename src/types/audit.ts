@@ -90,6 +90,7 @@ export interface AuditProgress {
   completedUrls: number;
   discoveredUrls?: number;
   percentComplete: number;
+  error?: string;
 }
 
 // ============================================================================
