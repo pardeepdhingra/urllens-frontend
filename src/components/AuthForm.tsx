@@ -198,7 +198,6 @@ export default function AuthForm({
         <Typography variant="body2" color="text.secondary">
           {isSignup ? 'Already have an account? ' : "Don't have an account? "}
           <MuiLink
-            component={Link}
             href={isSignup ? '/login' : '/signup'}
             underline="hover"
             fontWeight={600}

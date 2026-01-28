@@ -57,6 +57,11 @@ export default function Header({ user }: HeaderProps) {
     router.refresh();
   };
 
+  const handleNavigate = (path: string) => {
+    handleMenuClose();
+    router.push(path);
+  };
+
   const getInitial = (email: string) => {
     return email.charAt(0).toUpperCase();
   };
@@ -98,7 +103,6 @@ export default function Header({ user }: HeaderProps) {
           {!isMobile && (
             <>
               <Button
-                component={Link}
                 href="/features"
                 startIcon={<AutoAwesome />}
                 color="inherit"
@@ -106,7 +110,6 @@ export default function Header({ user }: HeaderProps) {
                 Features
               </Button>
               <Button
-                component={Link}
                 href="/about-pardeep"
                 startIcon={<PersonOutline />}
                 color="inherit"
@@ -120,7 +123,6 @@ export default function Header({ user }: HeaderProps) {
             <>
               {!isMobile && (
                 <Button
-                  component={Link}
                   href="/dashboard"
                   startIcon={<Dashboard />}
                   color="inherit"
@@ -163,27 +165,15 @@ export default function Header({ user }: HeaderProps) {
                 <Divider />
                 {isMobile && (
                   <>
-                    <MenuItem
-                      component={Link}
-                      href="/features"
-                      onClick={handleMenuClose}
-                    >
+                    <MenuItem onClick={() => handleNavigate('/features')}>
                       <AutoAwesome sx={{ mr: 1, fontSize: 20 }} />
                       Features
                     </MenuItem>
-                    <MenuItem
-                      component={Link}
-                      href="/about-pardeep"
-                      onClick={handleMenuClose}
-                    >
+                    <MenuItem onClick={() => handleNavigate('/about-pardeep')}>
                       <PersonOutline sx={{ mr: 1, fontSize: 20 }} />
                       About
                     </MenuItem>
-                    <MenuItem
-                      component={Link}
-                      href="/dashboard"
-                      onClick={handleMenuClose}
-                    >
+                    <MenuItem onClick={() => handleNavigate('/dashboard')}>
                       <Dashboard sx={{ mr: 1, fontSize: 20 }} />
                       Dashboard
                     </MenuItem>
@@ -223,34 +213,20 @@ export default function Header({ user }: HeaderProps) {
                       sx: { minWidth: 180, mt: 1 },
                     }}
                   >
-                    <MenuItem
-                      component={Link}
-                      href="/features"
-                      onClick={handleMenuClose}
-                    >
+                    <MenuItem onClick={() => handleNavigate('/features')}>
                       <AutoAwesome sx={{ mr: 1, fontSize: 20 }} />
                       Features
                     </MenuItem>
-                    <MenuItem
-                      component={Link}
-                      href="/about-pardeep"
-                      onClick={handleMenuClose}
-                    >
+                    <MenuItem onClick={() => handleNavigate('/about-pardeep')}>
                       <PersonOutline sx={{ mr: 1, fontSize: 20 }} />
                       About
                     </MenuItem>
                     <Divider />
-                    <MenuItem
-                      component={Link}
-                      href="/login"
-                      onClick={handleMenuClose}
-                    >
+                    <MenuItem onClick={() => handleNavigate('/login')}>
                       Sign In
                     </MenuItem>
                     <MenuItem
-                      component={Link}
-                      href="/signup"
-                      onClick={handleMenuClose}
+                      onClick={() => handleNavigate('/signup')}
                       sx={{ color: 'primary.main', fontWeight: 600 }}
                     >
                       Get Started
@@ -261,18 +237,10 @@ export default function Header({ user }: HeaderProps) {
               {/* Desktop buttons */}
               {!isMobile && (
                 <>
-                  <Button
-                    component={Link}
-                    href="/login"
-                    color="inherit"
-                  >
+                  <Button href="/login" color="inherit">
                     Sign In
                   </Button>
-                  <Button
-                    component={Link}
-                    href="/signup"
-                    variant="contained"
-                  >
+                  <Button href="/signup" variant="contained">
                     Get Started
                   </Button>
                 </>

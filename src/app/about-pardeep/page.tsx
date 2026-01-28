@@ -572,7 +572,6 @@ export default function AboutPardeepPage() {
             </Typography>
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Button
-                component={Link}
                 href="/features"
                 variant="contained"
                 endIcon={<ArrowForward />}
@@ -588,7 +587,6 @@ export default function AboutPardeepPage() {
                 Explore Features
               </Button>
               <Button
-                component={Link}
                 href="/dashboard"
                 variant="outlined"
                 sx={{
