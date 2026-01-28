@@ -422,22 +422,37 @@ export async function analyzeUrlVisually(
       console.log('  Final Status:', finalStatus);
       console.log('  Redirect chain length:', redirectChain.length);
 
+      // Helper to normalize URLs for comparison (ignore trailing slash, www, protocol)
+      const normalizeForComparison = (url: string): string => {
+        try {
+          const u = new URL(url);
+          let host = u.host.replace(/^www\./, '');
+          let path = u.pathname.replace(/\/$/, '') || '/';
+          return `${host}${path}${u.search}`;
+        } catch {
+          return url;
+        }
+      };
+
+      // Check if there are meaningful redirects (not just trailing slash or www changes)
+      const hasMeaningfulRedirects = redirectChain.length > 0 &&
+        normalizeForComparison(normalizedUrl) !== normalizeForComparison(finalUrl);
+
       // Update the initial screenshot entry
       screenshots[0].status = redirectChain.length > 0 ? redirectChain[0].status : finalStatus;
 
-      // If there were redirects, we need to show the redirect chain
-      if (redirectChain.length > 0 || finalUrl !== normalizedUrl) {
-        // For each redirect in the chain, add an entry
-        // Note: We can't go back in time to capture screenshots at each redirect
-        // So we'll document the redirect chain with the final screenshot
+      // Capture the screenshot first
+      const finalScreenshot = await captureScreenshot(page);
+      const finalBlockedReason = await detectBlockedReason(page);
 
+      // If there were meaningful redirects (different domain/path), show the redirect chain
+      if (hasMeaningfulRedirects) {
         // Build the complete URL chain
         const urlChain: Array<{ url: string; status: number }> = [
           { url: normalizedUrl, status: redirectChain[0]?.status || 301 },
         ];
 
         for (const redirect of redirectChain) {
-          // Get the Location header destination (if any)
           urlChain.push(redirect);
         }
 
@@ -447,10 +462,6 @@ export async function analyzeUrlVisually(
         }
 
         console.log('URL chain:', urlChain.map((u) => u.url));
-
-        // Capture final screenshot
-        const finalScreenshot = await captureScreenshot(page);
-        const finalBlockedReason = await detectBlockedReason(page);
 
         // Update first entry with info about redirect
         screenshots[0].page_title = `Redirects to: ${finalUrl.substring(0, 50)}...`;
@@ -484,36 +495,16 @@ export async function analyzeUrlVisually(
             }
           }
         }
-
-        // If we only have the initial entry and it redirected, update it
-        if (screenshots.length === 1 && finalUrl !== normalizedUrl) {
-          currentStep++;
-          screenshots.push({
-            step: currentStep,
-            url: finalUrl,
-            status: finalStatus,
-            screenshot_base64: finalScreenshot,
-            page_title: finalTitle,
-            timestamp: new Date().toISOString(),
-            blocked_reason: finalBlockedReason,
-          });
-
-          if (finalBlockedReason) {
-            blocked = true;
-            blockedAtStep = currentStep;
-          }
-        }
       } else {
-        // No redirects - just capture the final page
-        const screenshot = await captureScreenshot(page);
-        const blockedReason = await detectBlockedReason(page);
-
-        screenshots[0].screenshot_base64 = screenshot;
+        // No meaningful redirects - just show the final page as step 1
+        // Update the URL to the final URL (handles trailing slash, www normalization)
+        screenshots[0].url = finalUrl;
+        screenshots[0].screenshot_base64 = finalScreenshot;
         screenshots[0].page_title = finalTitle;
         screenshots[0].status = finalStatus;
-        screenshots[0].blocked_reason = blockedReason;
+        screenshots[0].blocked_reason = finalBlockedReason;
 
-        if (blockedReason) {
+        if (finalBlockedReason) {
           blocked = true;
           blockedAtStep = 1;
         }
