@@ -8,8 +8,7 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { analyzeSocialPreview, SocialPreviewResult } from '@/lib/socialPreviewAnalyzer';
+import type { SocialPreviewResult } from '@/lib/socialPreviewAnalyzer';
 
 // ============================================================================
 // Types
@@ -69,18 +68,68 @@ function isValidUrl(url: string): boolean {
 
 export async function POST(request: NextRequest): Promise<NextResponse<SocialPreviewResponse>> {
   try {
-    // 1. Authenticate user (optional - allow guest access)
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // 1. Parse request body first (doesn't require any imports)
+    let body: SocialPreviewRequest;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Invalid JSON body' },
+        { status: 400 }
+      );
+    }
+
+    // 2. Validate URL
+    if (!body.url || typeof body.url !== 'string') {
+      return NextResponse.json(
+        { success: false, error: 'URL is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!isValidUrl(body.url)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid URL format' },
+        { status: 400 }
+      );
+    }
+
+    // 3. Dynamic imports to catch loading errors
+    let createServerSupabaseClient;
+    let analyzeSocialPreview;
+
+    try {
+      const supabaseModule = await import('@/lib/supabase/server');
+      createServerSupabaseClient = supabaseModule.createServerSupabaseClient;
+
+      const analyzerModule = await import('@/lib/socialPreviewAnalyzer');
+      analyzeSocialPreview = analyzerModule.analyzeSocialPreview;
+    } catch (importError) {
+      console.error('Module import error:', importError);
+      return NextResponse.json(
+        { success: false, error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
+    // 4. Authenticate user (optional - allow guest access)
+    let user = null;
+    let supabase = null;
+    try {
+      supabase = await createServerSupabaseClient();
+      const { data } = await supabase.auth.getUser();
+      user = data?.user;
+    } catch (authError) {
+      // Continue without auth - guest access
+      console.error('Auth error (continuing as guest):', authError);
+    }
 
     // Use user ID or IP for rate limiting
     const rateLimitKey = user?.id ||
       request.headers.get('x-forwarded-for')?.split(',')[0] ||
       'anonymous';
 
-    // 2. Check rate limit
+    // 5. Check rate limit
     const { allowed, remaining } = checkRateLimit(rateLimitKey);
 
     if (!allowed) {
@@ -96,37 +145,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<SocialPre
       );
     }
 
-    // 3. Parse request body
-    let body: SocialPreviewRequest;
-    try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json(
-        { success: false, error: 'Invalid JSON body' },
-        { status: 400 }
-      );
-    }
-
-    // 4. Validate URL
-    if (!body.url || typeof body.url !== 'string') {
-      return NextResponse.json(
-        { success: false, error: 'URL is required' },
-        { status: 400 }
-      );
-    }
-
-    if (!isValidUrl(body.url)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid URL format' },
-        { status: 400 }
-      );
-    }
-
-    // 5. Analyze social preview
+    // 6. Analyze social preview
     const preview = await analyzeSocialPreview(body.url);
 
-    // 6. Optionally save to database for authenticated users
-    if (user) {
+    // 7. Optionally save to database for authenticated users
+    if (user && supabase) {
       try {
         await supabase.from('url_social_preview').insert({
           user_id: user.id,
@@ -141,7 +164,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<SocialPre
       }
     }
 
-    // 7. Return success response
+    // 8. Return success response
     return NextResponse.json(
       { success: true, preview },
       {
