@@ -2,6 +2,9 @@
 // URL Lens - Landing Page
 // ============================================================================
 
+// Force dynamic rendering since we use cookies for auth
+export const dynamic = 'force-dynamic';
+
 import { Box, Container, Typography, Card, CardContent } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {

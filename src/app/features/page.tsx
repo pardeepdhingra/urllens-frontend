@@ -3,6 +3,9 @@
 // Detailed information about all features
 // ============================================================================
 
+// Force dynamic rendering since we use cookies for auth
+export const dynamic = 'force-dynamic';
+
 import {
   Box,
   Container,
