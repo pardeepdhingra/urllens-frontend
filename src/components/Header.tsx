@@ -26,10 +26,14 @@ import {
   Dashboard,
   AutoAwesome,
   PersonOutline,
+  Science,
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
+
+// Feature flag for development features
+const isUnderDevEnabled = process.env.NEXT_PUBLIC_UNDER_DEV === 'true';
 
 interface HeaderProps {
   user?: { email: string } | null;
@@ -122,13 +126,24 @@ export default function Header({ user }: HeaderProps) {
           {user ? (
             <>
               {!isMobile && (
-                <Button
-                  href="/dashboard"
-                  startIcon={<Dashboard />}
-                  color="inherit"
-                >
-                  Dashboard
-                </Button>
+                <>
+                  <Button
+                    href="/dashboard"
+                    startIcon={<Dashboard />}
+                    color="inherit"
+                  >
+                    Dashboard
+                  </Button>
+                  {isUnderDevEnabled && (
+                    <Button
+                      href="/audit"
+                      startIcon={<Science />}
+                      color="inherit"
+                    >
+                      URL Audit
+                    </Button>
+                  )}
+                </>
               )}
 
               <IconButton onClick={handleMenuOpen} size="small">
@@ -177,6 +192,12 @@ export default function Header({ user }: HeaderProps) {
                       <Dashboard sx={{ mr: 1, fontSize: 20 }} />
                       Dashboard
                     </MenuItem>
+                    {isUnderDevEnabled && (
+                      <MenuItem onClick={() => handleNavigate('/audit')}>
+                        <Science sx={{ mr: 1, fontSize: 20 }} />
+                        URL Audit
+                      </MenuItem>
+                    )}
                   </>
                 )}
                 <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
