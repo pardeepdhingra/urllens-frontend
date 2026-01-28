@@ -197,9 +197,9 @@ export async function analyzeUrlVisually(
 ): Promise<VisualAnalysisResult> {
   const startTime = Date.now();
 
-  // Check if visual analysis is disabled (e.g., on Vercel serverless)
+  // Check if visual analysis is explicitly disabled via env var
   if (process.env.DISABLE_VISUAL_ANALYSIS === 'true') {
-    console.log('Visual analysis is disabled via DISABLE_VISUAL_ANALYSIS env var');
+    console.log('Visual analysis is disabled via DISABLE_VISUAL_ANALYSIS=true env var');
     return {
       screenshots: [],
       total_redirects: 0,
@@ -207,7 +207,7 @@ export async function analyzeUrlVisually(
       blocked: false,
       analysis_duration_ms: Date.now() - startTime,
       disabled: true,
-      disabled_reason: 'Visual analysis is not available in this deployment environment.',
+      disabled_reason: 'Visual analysis is disabled. Set DISABLE_VISUAL_ANALYSIS=false or remove it from environment variables.',
     };
   }
 
