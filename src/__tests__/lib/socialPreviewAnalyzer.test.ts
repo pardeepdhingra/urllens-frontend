@@ -2,115 +2,40 @@
 // URL Lens - Social Preview Analyzer Tests
 // ============================================================================
 
-// Mock jsdom before importing the module
-jest.mock('jsdom', () => {
-  class MockWindow {
-    document: MockDocument;
-    constructor() {
-      this.document = new MockDocument();
-    }
-  }
+// Mock cheerio before imports
+jest.mock('cheerio', () => {
+  const mockCheerio = (html: string) => {
+    const getAttr = (selector: string, attr: string) => {
+      const regex = new RegExp(`<[^>]*${selector.replace(/[[\]"=]/g, '.')}[^>]*${attr}=["']([^"']+)["']`, 'i');
+      const match = html.match(regex);
+      return match ? match[1] : undefined;
+    };
 
-  class MockDocument {
-    private elements: Map<string, MockElement[]> = new Map();
-    private html: string = '';
+    const getText = (selector: string) => {
+      const regex = new RegExp(`<${selector}[^>]*>([^<]+)</${selector}>`, 'i');
+      const match = html.match(regex);
+      return match ? match[1] : '';
+    };
 
-    setHtml(html: string) {
-      this.html = html;
-      this.parseHtml();
-    }
+    const $ = (selector: string) => ({
+      attr: (name: string) => {
+        if (selector.includes('meta')) return getAttr(selector, name);
+        if (selector.includes('link')) return getAttr(selector, name);
+        return undefined;
+      },
+      text: () => getText(selector.replace(/[[\]]/g, '')),
+      each: (fn: (index: number, el: unknown) => void) => {
+        const matches = html.match(new RegExp(`<meta[^>]*${selector.replace('meta', '').replace(/[[\]"=]/g, '.')}[^>]*>`, 'gi')) || [];
+        matches.forEach((_, i) => fn(i, {}));
+      },
+    });
 
-    private parseHtml() {
-      // Clear existing elements
-      this.elements.clear();
-
-      // Parse meta tags
-      const metaRegex = /<meta\s+([^>]+)>/gi;
-      let match;
-      while ((match = metaRegex.exec(this.html)) !== null) {
-        const attrs = match[1];
-        const element = new MockElement('meta');
-
-        // Parse attributes
-        const attrRegex = /(\w+)=["']([^"']+)["']/g;
-        let attrMatch;
-        while ((attrMatch = attrRegex.exec(attrs)) !== null) {
-          element.setAttribute(attrMatch[1], attrMatch[2]);
-        }
-
-        // Store by various selectors
-        const property = element.getAttribute('property');
-        const name = element.getAttribute('name');
-
-        if (property) {
-          this.addElement(`meta[property="${property}"]`, element);
-        }
-        if (name) {
-          this.addElement(`meta[name="${name}"]`, element);
-        }
-      }
-
-      // Parse title
-      const titleMatch = this.html.match(/<title>([^<]+)<\/title>/i);
-      if (titleMatch) {
-        const titleElement = new MockElement('title');
-        titleElement.textContent = titleMatch[1];
-        this.addElement('title', titleElement);
-      }
-
-      // Parse canonical link
-      const canonicalMatch = this.html.match(/<link\s+rel=["']canonical["']\s+href=["']([^"']+)["'][^>]*>/i);
-      if (canonicalMatch) {
-        const linkElement = new MockElement('link');
-        linkElement.setAttribute('rel', 'canonical');
-        linkElement.setAttribute('href', canonicalMatch[1]);
-        this.addElement('link[rel="canonical"]', linkElement);
-      }
-    }
-
-    private addElement(selector: string, element: MockElement) {
-      if (!this.elements.has(selector)) {
-        this.elements.set(selector, []);
-      }
-      this.elements.get(selector)!.push(element);
-    }
-
-    querySelector(selector: string): MockElement | null {
-      const elements = this.elements.get(selector);
-      return elements && elements.length > 0 ? elements[0] : null;
-    }
-
-    querySelectorAll(selector: string): MockElement[] {
-      return this.elements.get(selector) || [];
-    }
-  }
-
-  class MockElement {
-    private attributes: Map<string, string> = new Map();
-    public textContent: string | null = null;
-    public tagName: string;
-
-    constructor(tagName: string) {
-      this.tagName = tagName;
-    }
-
-    setAttribute(name: string, value: string) {
-      this.attributes.set(name, value);
-    }
-
-    getAttribute(name: string): string | null {
-      return this.attributes.get(name) ?? null;
-    }
-  }
+    $.load = () => $;
+    return $;
+  };
 
   return {
-    JSDOM: class {
-      window: MockWindow;
-      constructor(html: string) {
-        this.window = new MockWindow();
-        this.window.document.setHtml(html);
-      }
-    },
+    load: (html: string) => mockCheerio(html),
   };
 });
 
@@ -118,12 +43,10 @@ jest.mock('jsdom', () => {
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
-// Import after mocking
+// Import after setting up mocks
 import {
   analyzeSocialPreview,
   PLATFORM_RULES,
-  SocialPreviewResult,
-  RawMetadata,
 } from '@/lib/socialPreviewAnalyzer';
 
 describe('Social Preview Analyzer', () => {
@@ -187,67 +110,34 @@ describe('Social Preview Analyzer', () => {
       </html>
     `;
 
-    const mockHtmlMinimal = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Minimal Page</title>
-        </head>
-        <body></body>
-      </html>
-    `;
+    const createMockResponse = (html: string, url: string = 'https://example.com') => ({
+      ok: true,
+      url,
+      headers: new Map([['content-type', 'text/html']]),
+      body: {
+        getReader: () => ({
+          read: jest.fn()
+            .mockResolvedValueOnce({
+              done: false,
+              value: new TextEncoder().encode(html),
+            })
+            .mockResolvedValueOnce({ done: true }),
+          cancel: jest.fn(),
+        }),
+      },
+    });
 
     it('should normalize URL without protocol', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        url: 'https://example.com',
-        headers: new Map([['content-type', 'text/html']]),
-        body: {
-          getReader: () => ({
-            read: jest.fn()
-              .mockResolvedValueOnce({
-                done: false,
-                value: new TextEncoder().encode(mockHtmlWithAllMeta),
-              })
-              .mockResolvedValueOnce({ done: true }),
-            cancel: jest.fn(),
-          }),
-        },
-      });
-
-      // Mock HEAD request for image validation
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        headers: new Map([['content-length', '50000']]),
-      });
+      mockFetch.mockResolvedValueOnce(createMockResponse(mockHtmlWithAllMeta));
+      mockFetch.mockResolvedValue({ ok: true, headers: new Map([['content-length', '50000']]) });
 
       const result = await analyzeSocialPreview('example.com');
-
       expect(result.url).toBe('https://example.com');
     });
 
     it('should extract all metadata when available', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        url: 'https://example.com',
-        headers: new Map([['content-type', 'text/html']]),
-        body: {
-          getReader: () => ({
-            read: jest.fn()
-              .mockResolvedValueOnce({
-                done: false,
-                value: new TextEncoder().encode(mockHtmlWithAllMeta),
-              })
-              .mockResolvedValueOnce({ done: true }),
-            cancel: jest.fn(),
-          }),
-        },
-      });
-
-      mockFetch.mockResolvedValue({
-        ok: true,
-        headers: new Map([['content-length', '50000']]),
-      });
+      mockFetch.mockResolvedValueOnce(createMockResponse(mockHtmlWithAllMeta));
+      mockFetch.mockResolvedValue({ ok: true, headers: new Map([['content-length', '50000']]) });
 
       const result = await analyzeSocialPreview('https://example.com');
 
@@ -300,7 +190,7 @@ describe('Social Preview Analyzer', () => {
       <html>
         <head>
           <title>Test Title That Is Quite Long And Should Be Truncated Eventually</title>
-          <meta name="description" content="A longer description that provides more context about the page content and might need truncation depending on the platform.">
+          <meta name="description" content="A longer description that provides more context about the page content.">
           <meta property="og:title" content="OG Title">
           <meta property="og:description" content="OG Description">
           <meta property="og:image" content="https://example.com/image.jpg">
@@ -309,28 +199,21 @@ describe('Social Preview Analyzer', () => {
       </html>
     `;
 
-    beforeEach(() => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        url: 'https://example.com',
-        headers: new Map([['content-type', 'text/html']]),
-        body: {
-          getReader: () => ({
-            read: jest.fn()
-              .mockResolvedValueOnce({
-                done: false,
-                value: new TextEncoder().encode(mockHtml),
-              })
-              .mockResolvedValueOnce({ done: true }),
-            cancel: jest.fn(),
-          }),
-        },
-      });
-
-      mockFetch.mockResolvedValue({
-        ok: true,
-        headers: new Map([['content-length', '100000']]),
-      });
+    const createMockResponse = (html: string, url: string = 'https://example.com') => ({
+      ok: true,
+      url,
+      headers: new Map([['content-type', 'text/html']]),
+      body: {
+        getReader: () => ({
+          read: jest.fn()
+            .mockResolvedValueOnce({
+              done: false,
+              value: new TextEncoder().encode(html),
+            })
+            .mockResolvedValueOnce({ done: true }),
+          cancel: jest.fn(),
+        }),
+      },
     });
 
     it('should generate Facebook preview with warnings for missing og:title', async () => {
@@ -344,23 +227,7 @@ describe('Social Preview Analyzer', () => {
         </html>
       `;
 
-      mockFetch.mockReset();
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        url: 'https://example.com',
-        headers: new Map([['content-type', 'text/html']]),
-        body: {
-          getReader: () => ({
-            read: jest.fn()
-              .mockResolvedValueOnce({
-                done: false,
-                value: new TextEncoder().encode(htmlNoOg),
-              })
-              .mockResolvedValueOnce({ done: true }),
-            cancel: jest.fn(),
-          }),
-        },
-      });
+      mockFetch.mockResolvedValueOnce(createMockResponse(htmlNoOg));
 
       const result = await analyzeSocialPreview('https://example.com');
 
@@ -370,9 +237,10 @@ describe('Social Preview Analyzer', () => {
     });
 
     it('should generate Google preview using standard HTML tags', async () => {
-      const result = await analyzeSocialPreview('https://example.com');
+      mockFetch.mockResolvedValueOnce(createMockResponse(mockHtml));
+      mockFetch.mockResolvedValue({ ok: true, headers: new Map([['content-length', '100000']]) });
 
-      // Google should use <title> not og:title
+      const result = await analyzeSocialPreview('https://example.com');
       expect(result.platforms.google.title).toContain('Test Title');
     });
 
@@ -388,26 +256,9 @@ describe('Social Preview Analyzer', () => {
         </html>
       `;
 
-      mockFetch.mockReset();
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        url: 'https://example.com',
-        headers: new Map([['content-type', 'text/html']]),
-        body: {
-          getReader: () => ({
-            read: jest.fn()
-              .mockResolvedValueOnce({
-                done: false,
-                value: new TextEncoder().encode(htmlWithTwitter),
-              })
-              .mockResolvedValueOnce({ done: true }),
-            cancel: jest.fn(),
-          }),
-        },
-      });
+      mockFetch.mockResolvedValueOnce(createMockResponse(htmlWithTwitter));
 
       const result = await analyzeSocialPreview('https://example.com');
-
       expect(result.platforms.twitter.title).toBe('Twitter Specific Title');
     });
 
@@ -423,32 +274,18 @@ describe('Social Preview Analyzer', () => {
         </html>
       `;
 
-      mockFetch.mockReset();
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        url: 'https://example.com',
-        headers: new Map([['content-type', 'text/html']]),
-        body: {
-          getReader: () => ({
-            read: jest.fn()
-              .mockResolvedValueOnce({
-                done: false,
-                value: new TextEncoder().encode(htmlLongTitle),
-              })
-              .mockResolvedValueOnce({ done: true }),
-            cancel: jest.fn(),
-          }),
-        },
-      });
+      mockFetch.mockResolvedValueOnce(createMockResponse(htmlLongTitle));
 
       const result = await analyzeSocialPreview('https://example.com');
 
-      // Facebook title should be truncated to 88 chars (+ "...")
       expect(result.platforms.facebook.title.length).toBeLessThanOrEqual(91);
       expect(result.platforms.facebook.title.endsWith('...')).toBe(true);
     });
 
     it('should include displayUrl for all platforms', async () => {
+      mockFetch.mockResolvedValueOnce(createMockResponse(mockHtml));
+      mockFetch.mockResolvedValue({ ok: true, headers: new Map([['content-length', '100000']]) });
+
       const result = await analyzeSocialPreview('https://example.com');
 
       expect(result.platforms.facebook.displayUrl).toBeDefined();
@@ -461,6 +298,23 @@ describe('Social Preview Analyzer', () => {
   });
 
   describe('Image Validation', () => {
+    const createMockResponse = (html: string, url: string = 'https://example.com') => ({
+      ok: true,
+      url,
+      headers: new Map([['content-type', 'text/html']]),
+      body: {
+        getReader: () => ({
+          read: jest.fn()
+            .mockResolvedValueOnce({
+              done: false,
+              value: new TextEncoder().encode(html),
+            })
+            .mockResolvedValueOnce({ done: true }),
+          cancel: jest.fn(),
+        }),
+      },
+    });
+
     it('should validate image and get size', async () => {
       const mockHtml = `
         <!DOCTYPE html>
@@ -472,27 +326,10 @@ describe('Social Preview Analyzer', () => {
         </html>
       `;
 
+      mockFetch.mockResolvedValueOnce(createMockResponse(mockHtml));
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        url: 'https://example.com',
-        headers: new Map([['content-type', 'text/html']]),
-        body: {
-          getReader: () => ({
-            read: jest.fn()
-              .mockResolvedValueOnce({
-                done: false,
-                value: new TextEncoder().encode(mockHtml),
-              })
-              .mockResolvedValueOnce({ done: true }),
-            cancel: jest.fn(),
-          }),
-        },
-      });
-
-      // Image HEAD request
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        headers: new Map([['content-length', '153600']]), // 150KB
+        headers: new Map([['content-length', '153600']]),
       });
 
       const result = await analyzeSocialPreview('https://example.com');
@@ -514,37 +351,32 @@ describe('Social Preview Analyzer', () => {
         </html>
       `;
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        url: 'https://example.com',
-        headers: new Map([['content-type', 'text/html']]),
-        body: {
-          getReader: () => ({
-            read: jest.fn()
-              .mockResolvedValueOnce({
-                done: false,
-                value: new TextEncoder().encode(mockHtml),
-              })
-              .mockResolvedValueOnce({ done: true }),
-            cancel: jest.fn(),
-          }),
-        },
-      });
-
-      // Image HEAD request fails
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-      });
+      mockFetch.mockResolvedValueOnce(createMockResponse(mockHtml));
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
 
       const result = await analyzeSocialPreview('https://example.com');
-
-      // Should still have the image URL in metadata
       expect(result.metadata.raw.ogImage).toBe('https://example.com/broken-image.jpg');
     });
   });
 
   describe('URL Normalization', () => {
+    const createMockResponse = (html: string, url: string = 'https://example.com') => ({
+      ok: true,
+      url,
+      headers: new Map([['content-type', 'text/html']]),
+      body: {
+        getReader: () => ({
+          read: jest.fn()
+            .mockResolvedValueOnce({
+              done: false,
+              value: new TextEncoder().encode(html),
+            })
+            .mockResolvedValueOnce({ done: true }),
+          cancel: jest.fn(),
+        }),
+      },
+    });
+
     it('should resolve relative image URLs', async () => {
       const mockHtml = `
         <!DOCTYPE html>
@@ -556,30 +388,10 @@ describe('Social Preview Analyzer', () => {
         </html>
       `;
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        url: 'https://example.com/page',
-        headers: new Map([['content-type', 'text/html']]),
-        body: {
-          getReader: () => ({
-            read: jest.fn()
-              .mockResolvedValueOnce({
-                done: false,
-                value: new TextEncoder().encode(mockHtml),
-              })
-              .mockResolvedValueOnce({ done: true }),
-            cancel: jest.fn(),
-          }),
-        },
-      });
-
-      mockFetch.mockResolvedValue({
-        ok: true,
-        headers: new Map([['content-length', '50000']]),
-      });
+      mockFetch.mockResolvedValueOnce(createMockResponse(mockHtml, 'https://example.com/page'));
+      mockFetch.mockResolvedValue({ ok: true, headers: new Map([['content-length', '50000']]) });
 
       const result = await analyzeSocialPreview('https://example.com/page');
-
       expect(result.metadata.raw.ogImage).toBe('https://example.com/images/og.jpg');
     });
 
@@ -594,26 +406,9 @@ describe('Social Preview Analyzer', () => {
         </html>
       `;
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        url: 'https://www.example.com/very/long/path/to/page',
-        headers: new Map([['content-type', 'text/html']]),
-        body: {
-          getReader: () => ({
-            read: jest.fn()
-              .mockResolvedValueOnce({
-                done: false,
-                value: new TextEncoder().encode(mockHtml),
-              })
-              .mockResolvedValueOnce({ done: true }),
-            cancel: jest.fn(),
-          }),
-        },
-      });
+      mockFetch.mockResolvedValueOnce(createMockResponse(mockHtml, 'https://www.example.com/very/long/path'));
 
-      const result = await analyzeSocialPreview('https://www.example.com/very/long/path/to/page');
-
-      // Display URL should not have www prefix
+      const result = await analyzeSocialPreview('https://www.example.com/very/long/path');
       expect(result.platforms.facebook.displayUrl).not.toContain('www.');
     });
   });

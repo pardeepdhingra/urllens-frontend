@@ -3,7 +3,7 @@
 // Extracts and analyzes metadata for social media preview rendering
 // ============================================================================
 
-import { JSDOM } from 'jsdom';
+import * as cheerio from 'cheerio';
 
 // ============================================================================
 // Types
@@ -198,16 +198,12 @@ async function fetchHtml(url: string): Promise<{ html: string; finalUrl: string 
 // ============================================================================
 
 function extractMetadata(html: string, baseUrl: string): RawMetadata {
-  const dom = new JSDOM(html);
-  const document = dom.window.document;
+  const $ = cheerio.load(html);
 
   const getMetaContent = (selectors: string[]): string | undefined => {
     for (const selector of selectors) {
-      const element = document.querySelector(selector);
-      if (element) {
-        const content = element.getAttribute('content');
-        if (content?.trim()) return content.trim();
-      }
+      const content = $(selector).attr('content');
+      if (content?.trim()) return content.trim();
     }
     return undefined;
   };
@@ -276,16 +272,14 @@ function extractMetadata(html: string, baseUrl: string): RawMetadata {
   ]);
 
   // Extract standard HTML metadata
-  const titleElement = document.querySelector('title');
-  const title = titleElement?.textContent?.trim();
+  const title = $('title').text()?.trim() || undefined;
 
   const description = getMetaContent([
     'meta[name="description"]',
     'meta[property="description"]',
   ]);
 
-  const canonicalElement = document.querySelector('link[rel="canonical"]');
-  const canonical = normalizeUrl(canonicalElement?.getAttribute('href') || undefined);
+  const canonical = normalizeUrl($('link[rel="canonical"]').attr('href') || undefined);
 
   // Collect all potential images
   const images: ImageMetadata[] = [];
@@ -299,10 +293,9 @@ function extractMetadata(html: string, baseUrl: string): RawMetadata {
   }
 
   // Add additional OG images
-  const additionalOgImages = document.querySelectorAll('meta[property="og:image"]');
-  additionalOgImages.forEach((img, index) => {
+  $('meta[property="og:image"]').each((index, img) => {
     if (index === 0) return; // Skip first, already added
-    const url = normalizeUrl(img.getAttribute('content') || undefined);
+    const url = normalizeUrl($(img).attr('content') || undefined);
     if (url && !images.some(i => i.url === url)) {
       images.push({ url });
     }
