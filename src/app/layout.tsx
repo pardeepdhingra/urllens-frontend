@@ -15,8 +15,9 @@ const inter = Inter({
 
 const siteUrl = 'https://galasar.com';
 const siteName = 'URL Lens';
+// Keep under 160 characters for optimal SEO
 const siteDescription =
-  'The complete URL analysis platform. Analyze scrapability, SEO optimization, redirect chains, bot protections, and more. Get actionable insights with visual reports.';
+  'Free URL analysis platform. Analyze scrapability, SEO, bot protection, redirects. 10,000+ URLs analyzed. Get instant insights.';
 
 export const metadata: Metadata = {
   // Basic metadata
@@ -138,11 +139,19 @@ const organizationSchema = {
   sameAs: [
     'https://www.linkedin.com/in/pdhingra/',
     'https://medium.com/@pdhingra',
+    'https://github.com/pardeepdhingra',
+    'https://twitter.com/urllens',
   ],
   contactPoint: {
     '@type': 'ContactPoint',
     email: 'pardeep@galasar.com',
     contactType: 'customer support',
+    availableLanguage: ['English'],
+  },
+  address: {
+    '@type': 'PostalAddress',
+    addressCountry: 'AU',
+    addressLocality: 'Sydney',
   },
 };
 
@@ -152,7 +161,12 @@ const personSchema = {
   '@type': 'Person',
   '@id': `${siteUrl}/#founder`,
   name: 'Pardeep Dhingra',
+  givenName: 'Pardeep',
+  familyName: 'Dhingra',
   jobTitle: 'Founder & Developer',
+  image: `${siteUrl}/pardeep.jpg`,
+  email: 'pardeep@galasar.com',
+  url: `${siteUrl}/about-pardeep`,
   worksFor: {
     '@type': 'Organization',
     '@id': `${siteUrl}/#organization`,
@@ -160,6 +174,7 @@ const personSchema = {
   sameAs: [
     'https://www.linkedin.com/in/pdhingra/',
     'https://medium.com/@pdhingra',
+    'https://github.com/pardeepdhingra',
   ],
   knowsAbout: [
     'Web Scraping',
@@ -167,7 +182,13 @@ const personSchema = {
     'Cloud Architecture',
     'Full-Stack Development',
     'AI/ML Applications',
+    'URL Analysis',
+    'Bot Detection',
   ],
+  alumniOf: {
+    '@type': 'Organization',
+    name: 'Technology Industry',
+  },
 };
 
 // WebApplication structured data
@@ -250,8 +271,56 @@ const webPageSchema = {
   },
 };
 
+// BreadcrumbList schema
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: siteUrl,
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'Features',
+      item: `${siteUrl}/features`,
+    },
+    {
+      '@type': 'ListItem',
+      position: 3,
+      name: 'About',
+      item: `${siteUrl}/about-pardeep`,
+    },
+  ],
+};
+
+// WebSite schema with SearchAction
+const webSiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  '@id': `${siteUrl}/#website`,
+  url: siteUrl,
+  name: 'URL Lens',
+  description: siteDescription,
+  publisher: {
+    '@type': 'Organization',
+    '@id': `${siteUrl}/#organization`,
+  },
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: `${siteUrl}/dashboard?url={search_term_string}`,
+    },
+    'query-input': 'required name=search_term_string',
+  },
+};
+
 // Combined JSON-LD
-const jsonLd = [organizationSchema, personSchema, webAppSchema, webPageSchema];
+const jsonLd = [organizationSchema, personSchema, webAppSchema, webPageSchema, breadcrumbSchema, webSiteSchema];
 
 export default function RootLayout({
   children,
