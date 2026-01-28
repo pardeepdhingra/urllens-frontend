@@ -275,21 +275,37 @@ export async function analyzeUrlVisually(
     // Connect to Browserless.io or launch local browser
     if (useBrowserless) {
       console.log('Connecting to Browserless.io...');
-      const browserlessUrl = `wss://chrome.browserless.io?token=${browserlessApiKey}`;
+      // Use the Playwright-specific endpoint for Browserless
+      const browserlessUrl = `wss://chrome.browserless.io/playwright?token=${browserlessApiKey}`;
+      console.log('Browserless URL (token hidden):', browserlessUrl.replace(browserlessApiKey!, '***'));
+
       try {
-        browser = await chromium.connectOverCDP(browserlessUrl);
+        // Use connect() for Playwright endpoint, not connectOverCDP
+        browser = await chromium.connect(browserlessUrl);
         console.log('Connected to Browserless.io successfully');
       } catch (connectError) {
-        console.error('Failed to connect to Browserless.io:', connectError);
-        return {
-          screenshots: [],
-          total_redirects: 0,
-          final_url: inputUrl,
-          blocked: false,
-          analysis_duration_ms: Date.now() - startTime,
-          disabled: true,
-          disabled_reason: 'Failed to connect to Browserless.io. Please verify your API key is correct.',
-        };
+        const errorMsg = connectError instanceof Error ? connectError.message : String(connectError);
+        console.error('Failed to connect to Browserless.io:', errorMsg);
+
+        // Try alternative CDP endpoint as fallback
+        console.log('Trying CDP endpoint as fallback...');
+        const cdpUrl = `wss://chrome.browserless.io?token=${browserlessApiKey}`;
+        try {
+          browser = await chromium.connectOverCDP(cdpUrl);
+          console.log('Connected via CDP endpoint');
+        } catch (cdpError) {
+          const cdpErrorMsg = cdpError instanceof Error ? cdpError.message : String(cdpError);
+          console.error('CDP connection also failed:', cdpErrorMsg);
+          return {
+            screenshots: [],
+            total_redirects: 0,
+            final_url: inputUrl,
+            blocked: false,
+            analysis_duration_ms: Date.now() - startTime,
+            disabled: true,
+            disabled_reason: `Failed to connect to Browserless.io: ${errorMsg}. Please verify your API key is correct and has available credits.`,
+          };
+        }
       }
     } else {
       // Try to find system Chrome if Playwright's chromium is not available
