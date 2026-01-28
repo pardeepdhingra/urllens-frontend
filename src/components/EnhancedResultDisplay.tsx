@@ -47,6 +47,7 @@ import {
   CallSplit,
   CameraAlt,
   Link as LinkIcon,
+  Preview,
 } from '@mui/icons-material';
 import type { AnalysisResult, BotProtection, Redirect, RobotsTxtResult, RateLimitDetection, VisualAnalysisResult, UTMAnalysisResult, SEOAnalysisResult } from '@/types';
 import { getScoreColor, getScoreLabel } from '@/lib/scoringEngine';
@@ -54,6 +55,7 @@ import { analyzeHeaders, groupHeadersByCategory, type HeaderInfo } from '@/lib/h
 import { RedirectTimeline } from './RedirectTimeline';
 import { UTMTrackingPanel } from './UTMTrackingPanel';
 import SEOAnalysisPanel from './SEOAnalysisPanel';
+import SocialPreview from './SocialPreview';
 
 interface EnhancedResultDisplayProps {
   result: AnalysisResult | null;
@@ -413,16 +415,17 @@ export function EnhancedResultDisplay({
   const hasUtmAnalysis = !!enhancedResultForTabs?.utmAnalysis;
   const hasSeoAnalysis = !!enhancedResultForTabs?.seoAnalysis;
 
-  // Tab indices: Headers=0, robots.txt=1, Rate Limits=2, UTM=3, SEO=4 (if exists), Protections=5 (if exists), Visual Analysis=6
+  // Tab indices: Headers=0, robots.txt=1, Rate Limits=2, UTM=3, SEO=4 (if exists), Social Preview=5, Protections=6 (if exists), Visual Analysis=7
   // UTM tracking is always shown (index 3)
   const utmTabIndex = 3;
   let nextIndex = 4;
   const seoAnalysisTabIndex = hasSeoAnalysis ? nextIndex++ : -1;
+  const socialPreviewTabIndex = nextIndex++; // Social Preview is always shown
   const protectionsTabIndex = hasProtections ? nextIndex++ : -1;
   const visualAnalysisTabIndex = hasVisualAnalysis ? nextIndex++ : -1;
 
-  // Get total number of tabs (Headers, robots.txt, Rate Limits, UTM + optional ones)
-  const totalTabs = 4 + (hasSeoAnalysis ? 1 : 0) + (hasProtections ? 1 : 0) + (hasVisualAnalysis ? 1 : 0);
+  // Get total number of tabs (Headers, robots.txt, Rate Limits, UTM, Social Preview + optional ones)
+  const totalTabs = 5 + (hasSeoAnalysis ? 1 : 0) + (hasProtections ? 1 : 0) + (hasVisualAnalysis ? 1 : 0);
 
   // Handle tab change - ensure value is within bounds
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
@@ -650,6 +653,7 @@ export function EnhancedResultDisplay({
               {hasSeoAnalysis && (
                 <Tab icon={<Speed />} label="SEO Analysis" iconPosition="start" />
               )}
+              <Tab icon={<Preview />} label="Social Preview" iconPosition="start" />
               {hasProtections && (
                 <Tab icon={<Shield />} label="Protections" iconPosition="start" />
               )}
@@ -684,6 +688,10 @@ export function EnhancedResultDisplay({
               <SEOAnalysisPanel analysis={enhancedResultForTabs.seoAnalysis!} />
             </TabPanel>
           )}
+
+          <TabPanel value={tabValue} index={socialPreviewTabIndex}>
+            <SocialPreview url={result.url} analysisId={analysisId} />
+          </TabPanel>
 
           {hasProtections && (
             <TabPanel value={tabValue} index={protectionsTabIndex}>

@@ -274,5 +274,82 @@ export interface EnvConfig {
   isProduction: boolean;
 }
 
+// ============================================================================
+// Social Media Preview Types
+// ============================================================================
+
+export interface SocialImageMetadata {
+  url: string;
+  width?: number;
+  height?: number;
+  size_kb?: number;
+  aspectRatio?: number;
+}
+
+export interface SocialRawMetadata {
+  // Open Graph
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+  ogUrl?: string;
+  ogType?: string;
+  ogSiteName?: string;
+
+  // Twitter Card
+  twitterTitle?: string;
+  twitterDescription?: string;
+  twitterImage?: string;
+  twitterCard?: string;
+
+  // Standard HTML
+  title?: string;
+  description?: string;
+  canonical?: string;
+
+  // All images found
+  images: SocialImageMetadata[];
+}
+
+export interface SocialPlatformWarning {
+  type: 'error' | 'warning' | 'info';
+  message: string;
+  field?: string;
+}
+
+export interface SocialPlatformPreview {
+  title: string;
+  description: string;
+  image?: string;
+  displayUrl?: string;
+  warnings: SocialPlatformWarning[];
+}
+
+export interface SocialPreviewResult {
+  url: string;
+  finalUrl: string;
+  metadata: {
+    title: string;
+    description: string;
+    canonical: string;
+    images: SocialImageMetadata[];
+    raw: SocialRawMetadata;
+  };
+  platforms: {
+    facebook: SocialPlatformPreview;
+    linkedin: SocialPlatformPreview;
+    google: SocialPlatformPreview;
+    twitter: SocialPlatformPreview;
+    whatsapp: SocialPlatformPreview;
+    telegram: SocialPlatformPreview;
+  };
+  fetchedAt: string;
+}
+
+export interface SocialPreviewResponse {
+  success: boolean;
+  preview?: SocialPreviewResult;
+  error?: string;
+}
+
 // Re-export SEO types
 export * from './seo';
