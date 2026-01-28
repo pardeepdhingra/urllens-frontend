@@ -25,6 +25,7 @@ import {
   Logout,
   Dashboard,
   AutoAwesome,
+  PersonOutline,
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -93,17 +94,26 @@ export default function Header({ user }: HeaderProps) {
 
         {/* Navigation */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {/* Features link - always visible */}
+          {/* Navigation links - always visible on desktop */}
           {!isMobile && (
-            <Button
-              component={Link}
-              href="/features"
-              startIcon={<AutoAwesome />}
-              color="inherit"
-              sx={{ mr: 1 }}
-            >
-              Features
-            </Button>
+            <>
+              <Button
+                component={Link}
+                href="/features"
+                startIcon={<AutoAwesome />}
+                color="inherit"
+              >
+                Features
+              </Button>
+              <Button
+                component={Link}
+                href="/about-pardeep"
+                startIcon={<PersonOutline />}
+                color="inherit"
+              >
+                About
+              </Button>
+            </>
           )}
 
           {user ? (
@@ -163,6 +173,14 @@ export default function Header({ user }: HeaderProps) {
                     </MenuItem>
                     <MenuItem
                       component={Link}
+                      href="/about-pardeep"
+                      onClick={handleMenuClose}
+                    >
+                      <PersonOutline sx={{ mr: 1, fontSize: 20 }} />
+                      About
+                    </MenuItem>
+                    <MenuItem
+                      component={Link}
                       href="/dashboard"
                       onClick={handleMenuClose}
                     >
@@ -179,22 +197,86 @@ export default function Header({ user }: HeaderProps) {
             </>
           ) : (
             <>
-              <Button
-                component={Link}
-                href="/login"
-                color="inherit"
-                sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
-              >
-                Sign In
-              </Button>
-              <Button
-                component={Link}
-                href="/signup"
-                variant="contained"
-                size={isMobile ? 'small' : 'medium'}
-              >
-                Get Started
-              </Button>
+              {/* Mobile menu for non-logged-in users */}
+              {isMobile && (
+                <>
+                  <IconButton onClick={handleMenuOpen} size="small">
+                    <Avatar
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        bgcolor: 'grey.200',
+                        color: 'grey.600',
+                        fontSize: '0.875rem',
+                      }}
+                    >
+                      <Person />
+                    </Avatar>
+                  </IconButton>
+                  <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleMenuClose}
+                    transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                    PaperProps={{
+                      sx: { minWidth: 180, mt: 1 },
+                    }}
+                  >
+                    <MenuItem
+                      component={Link}
+                      href="/features"
+                      onClick={handleMenuClose}
+                    >
+                      <AutoAwesome sx={{ mr: 1, fontSize: 20 }} />
+                      Features
+                    </MenuItem>
+                    <MenuItem
+                      component={Link}
+                      href="/about-pardeep"
+                      onClick={handleMenuClose}
+                    >
+                      <PersonOutline sx={{ mr: 1, fontSize: 20 }} />
+                      About
+                    </MenuItem>
+                    <Divider />
+                    <MenuItem
+                      component={Link}
+                      href="/login"
+                      onClick={handleMenuClose}
+                    >
+                      Sign In
+                    </MenuItem>
+                    <MenuItem
+                      component={Link}
+                      href="/signup"
+                      onClick={handleMenuClose}
+                      sx={{ color: 'primary.main', fontWeight: 600 }}
+                    >
+                      Get Started
+                    </MenuItem>
+                  </Menu>
+                </>
+              )}
+              {/* Desktop buttons */}
+              {!isMobile && (
+                <>
+                  <Button
+                    component={Link}
+                    href="/login"
+                    color="inherit"
+                  >
+                    Sign In
+                  </Button>
+                  <Button
+                    component={Link}
+                    href="/signup"
+                    variant="contained"
+                  >
+                    Get Started
+                  </Button>
+                </>
+              )}
             </>
           )}
         </Box>
