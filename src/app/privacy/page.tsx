@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { Box, Container, Typography } from '@mui/material';
-import { Header } from '@/components';
+import { Header, Footer } from '@/components';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', display: 'flex', flexDirection: 'column' }}>
       <Header />
 
       <Container component="article" maxWidth="md" sx={{ py: { xs: 4, md: 8 } }}>
@@ -113,6 +113,8 @@ export default function PrivacyPage() {
           </Typography>
         </Box>
       </Container>
+
+      <Footer />
     </Box>
   );
 }

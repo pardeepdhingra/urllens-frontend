@@ -13,3 +13,4 @@ export { SharedResultDisplay } from './SharedResultDisplay';
 export { EnhancedResultDisplay } from './EnhancedResultDisplay';
 export { RedirectTimeline } from './RedirectTimeline';
 export { default as FAQSection } from './FAQSection';
+export { default as Footer } from './Footer';
