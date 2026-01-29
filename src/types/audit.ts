@@ -117,7 +117,8 @@ export type DiscoverySourceType =
   | 'sitemap'
   | 'sitemap_index'
   | 'robots_txt'
-  | 'common_path';
+  | 'common_path'
+  | 'google_index';
 
 export interface DiscoverySource {
   type: DiscoverySourceType;

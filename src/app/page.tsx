@@ -768,7 +768,7 @@ export default async function LandingPage() {
             </Typography>
             <Box sx={{ pl: { xs: 0, md: 6 } }}>
               <Typography variant="subtitle1" fontWeight={600}>
-                Pardeep Dhingra
+                John Doe
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9 }}>
                 Founder & Developer, URL Lens | 10+ years in web scraping and data engineering

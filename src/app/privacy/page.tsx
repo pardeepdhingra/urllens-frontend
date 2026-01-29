@@ -107,8 +107,8 @@ export default function PrivacyPage() {
           </Typography>
           <Typography variant="body1" paragraph>
             If you have questions about this Privacy Policy, please contact us at:{' '}
-            <a href="mailto:pardeep@galasar.com" style={{ color: '#2563eb' }}>
-              pardeep@galasar.com
+            <a href="mailto:contact@galasar.com" style={{ color: '#2563eb' }}>
+              contact@galasar.com
             </a>
           </Typography>
         </Box>

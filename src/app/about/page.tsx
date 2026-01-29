@@ -1,7 +1,7 @@
 "use client";
 
 // ============================================================================
-// URL Lens - About Pardeep Dhingra
+// URL Lens - About Page
 // Developer profile page with animations
 // ============================================================================
 
@@ -34,11 +34,9 @@ import {
   EmojiEvents,
   School,
   Rocket,
-  CheckCircle,
   ArrowForward,
 } from "@mui/icons-material";
 import { Header } from "@/components";
-import Link from "next/link";
 
 // Skill categories with icons and items
 const skillCategories = [
@@ -104,7 +102,7 @@ const techStack = [
   { name: "PostgreSQL", level: 87 },
 ];
 
-export default function AboutPardeepPage() {
+export default function AboutPage() {
   const [showEmail, setShowEmail] = useState(false);
 
   return (
@@ -156,8 +154,6 @@ export default function AboutPardeepPage() {
                   }}
                 >
                   <Avatar
-                    src="/pardeep.png"
-                    alt="Pardeep Dhingra"
                     sx={{
                       width: { xs: 150, md: 200 },
                       height: { xs: 150, md: 200 },
@@ -168,7 +164,7 @@ export default function AboutPardeepPage() {
                       backdropFilter: "blur(10px)",
                     }}
                   >
-                    PD
+                    JD
                   </Avatar>
                   <Box
                     sx={{
@@ -209,7 +205,7 @@ export default function AboutPardeepPage() {
                     animation: "slideIn 0.8s ease-out",
                   }}
                 >
-                  Pardeep Dhingra
+                  John Doe
                 </Typography>
                 <Typography
                   variant="h5"
@@ -283,7 +279,7 @@ export default function AboutPardeepPage() {
                   <Tooltip title="LinkedIn Profile">
                     <IconButton
                       component="a"
-                      href="https://www.linkedin.com/in/pardeep-dhingra/"
+                      href="https://www.linkedin.com/"
                       target="_blank"
                       rel="noopener noreferrer"
                       sx={{
@@ -302,7 +298,7 @@ export default function AboutPardeepPage() {
                   <Tooltip title="Medium Blog">
                     <IconButton
                       component="a"
-                      href="https://medium.com/@pardeepdhingra.01"
+                      href="https://medium.com/"
                       target="_blank"
                       rel="noopener noreferrer"
                       sx={{
@@ -330,7 +326,7 @@ export default function AboutPardeepPage() {
                       },
                     }}
                   >
-                    {showEmail ? "pardeep@galasar.com" : "Show Email"}
+                    {showEmail ? "contact@galasar.com" : "Show Email"}
                   </Button>
                 </Box>
               </Grid>
@@ -389,7 +385,7 @@ export default function AboutPardeepPage() {
                 sx={{ fontSize: "1.1rem", lineHeight: 1.8 }}
               >
                 I am an experienced Team Lead and Software Engineer with over{" "}
-                <strong>14 years of experience</strong> in designing,
+                <strong>15 years of experience</strong> in designing,
                 developing, and delivering scalable and efficient software
                 solutions. My expertise spans{" "}
                 <strong>Node.js, React.js, and Ruby on Rails</strong>, combined
@@ -667,7 +663,7 @@ export default function AboutPardeepPage() {
         <Container maxWidth="lg">
           <Typography variant="body2" color="text.secondary" align="center">
             © {new Date().getFullYear()} URL Lens. Crafted with passion by
-            Pardeep Dhingra.
+            John Doe.
           </Typography>
         </Container>
       </Box>

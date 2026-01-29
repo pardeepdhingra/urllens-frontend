@@ -1,6 +1,6 @@
 // ============================================================================
 // URL Lens - Domain Discovery Engine
-// Discovers URLs from sitemaps, robots.txt, and common paths
+// Discovers URLs from sitemaps, robots.txt, common paths, and Google Search
 // ============================================================================
 
 import {
@@ -13,6 +13,7 @@ import {
   AUDIT_LIMITS,
 } from '@/types/audit';
 import { parseRobotsTxt } from './robotsParser';
+import { discoverUrlsFromGoogle, isGoogleSearchConfigured } from './googleSearchDiscovery';
 
 // ============================================================================
 // Main Discovery Function
@@ -82,7 +83,26 @@ export async function discoverDomainURLs(
     }
   }
 
-  // Step 5: Deduplicate and limit URLs
+  // Step 5: Google Search fallback (if not enough URLs found)
+  // Uses Google Custom Search API - 100 free queries/day
+  const MIN_URLS_BEFORE_GOOGLE_FALLBACK = 10;
+  if (result.discoveredUrls.length < MIN_URLS_BEFORE_GOOGLE_FALLBACK && isGoogleSearchConfigured()) {
+    const googleResults = await discoverUrlsFromGoogle(normalizedDomain, {
+      maxResults: maxUrls - result.discoveredUrls.length,
+      includeSubdomains: true,
+    });
+
+    if (googleResults.urls.length > 0) {
+      result.sources.push({
+        type: 'google_index',
+        url: `https://www.google.com/search?q=site:${normalizedDomain}`,
+        urlsFound: googleResults.urls.length,
+      });
+      result.discoveredUrls.push(...googleResults.urls);
+    }
+  }
+
+  // Step 6: Deduplicate and limit URLs
   result.discoveredUrls = deduplicateUrls(result.discoveredUrls);
 
   // Limit to maxUrls

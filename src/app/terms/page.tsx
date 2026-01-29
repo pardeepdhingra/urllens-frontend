@@ -128,8 +128,8 @@ export default function TermsPage() {
           </Typography>
           <Typography variant="body1" paragraph>
             For questions about these Terms, contact us at:{' '}
-            <a href="mailto:pardeep@galasar.com" style={{ color: '#2563eb' }}>
-              pardeep@galasar.com
+            <a href="mailto:contact@galasar.com" style={{ color: '#2563eb' }}>
+              contact@galasar.com
             </a>
           </Typography>
         </Box>

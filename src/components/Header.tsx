@@ -114,7 +114,7 @@ export default function Header({ user }: HeaderProps) {
                 Features
               </Button>
               <Button
-                href="/about-pardeep"
+                href="/about"
                 startIcon={<PersonOutline />}
                 color="inherit"
               >
@@ -184,7 +184,7 @@ export default function Header({ user }: HeaderProps) {
                       <AutoAwesome sx={{ mr: 1, fontSize: 20 }} />
                       Features
                     </MenuItem>
-                    <MenuItem onClick={() => handleNavigate('/about-pardeep')}>
+                    <MenuItem onClick={() => handleNavigate('/about')}>
                       <PersonOutline sx={{ mr: 1, fontSize: 20 }} />
                       About
                     </MenuItem>
@@ -238,7 +238,7 @@ export default function Header({ user }: HeaderProps) {
                       <AutoAwesome sx={{ mr: 1, fontSize: 20 }} />
                       Features
                     </MenuItem>
-                    <MenuItem onClick={() => handleNavigate('/about-pardeep')}>
+                    <MenuItem onClick={() => handleNavigate('/about')}>
                       <PersonOutline sx={{ mr: 1, fontSize: 20 }} />
                       About
                     </MenuItem>

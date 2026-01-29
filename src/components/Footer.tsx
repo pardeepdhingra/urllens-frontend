@@ -42,7 +42,7 @@ export default function Footer() {
             Terms of Service
           </Link>
           <Link
-            href="/about-pardeep"
+            href="/about"
             style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.875rem' }}
           >
             Contact
@@ -57,10 +57,10 @@ export default function Footer() {
         <Typography variant="body2" color="text.secondary" align="center">
           © {new Date().getFullYear()} URL Lens. Built by{' '}
           <Link
-            href="/about-pardeep"
+            href="/about"
             style={{ color: '#2563eb', textDecoration: 'none' }}
           >
-            Pardeep Dhingra
+            John Doe
           </Link>
           {' '}for web scraping enthusiasts.
         </Typography>
@@ -70,7 +70,7 @@ export default function Footer() {
           align="center"
           sx={{ display: 'block', mt: 1 }}
         >
-          Contact: pardeep@galasar.com
+          Contact: contact@galasar.com
         </Typography>
       </Container>
     </Box>
