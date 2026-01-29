@@ -483,10 +483,10 @@ export default async function FeaturesPage() {
                     <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.7 }}>
                       {feature.description}
                     </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                       {feature.benefits.slice(0, 4).map((benefit, i) => (
-                        <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <CheckCircle sx={{ fontSize: 16, color: categoryColors[feature.category] }} />
+                        <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CheckCircle sx={{ fontSize: 16, color: categoryColors[feature.category], flexShrink: 0 }} />
                           <Typography variant="body2" color="text.secondary">
                             {benefit}
                           </Typography>

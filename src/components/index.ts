@@ -14,3 +14,4 @@ export { EnhancedResultDisplay } from './EnhancedResultDisplay';
 export { RedirectTimeline } from './RedirectTimeline';
 export { default as FAQSection } from './FAQSection';
 export { default as Footer } from './Footer';
+export { default as AuditHistoryTable } from './AuditHistoryTable';

@@ -5,7 +5,7 @@
 // Protected by NEXT_PUBLIC_UNDER_DEV feature flag
 // ============================================================================
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Container,
@@ -15,17 +15,37 @@ import {
   AlertTitle,
   Button,
   CircularProgress,
+  Snackbar,
 } from '@mui/material';
 import {
   Construction,
   Science,
   ArrowBack,
+  History,
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Audit from '@/components/Audit';
+import AuditHistoryTable from '@/components/AuditHistoryTable';
 import { getSupabaseClient } from '@/lib/supabase/client';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface AuditSession {
+  id: string;
+  mode: 'batch' | 'domain';
+  domain: string | null;
+  totalUrls: number;
+  completedUrls: number;
+  status: string;
+  createdAt: string;
+  completedAt: string | null;
+  avgScore?: number;
+  bestScore?: number;
+}
 
 // ============================================================================
 // Feature Flag Check
@@ -111,6 +131,25 @@ export default function AuditPage() {
   const router = useRouter();
   const [user, setUser] = useState<{ email: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [auditHistory, setAuditHistory] = useState<AuditSession[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
+
+  // Fetch audit history
+  const fetchHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const response = await fetch('/api/audit/history');
+      const data = await response.json();
+      if (data.success) {
+        setAuditHistory(data.sessions || []);
+      }
+    } catch (error) {
+      console.error('Error fetching audit history:', error);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
 
   // Check authentication
   useEffect(() => {
@@ -126,6 +165,8 @@ export default function AuditPage() {
         }
 
         setUser({ email: user.email || '' });
+        // Fetch history after auth
+        fetchHistory();
       } catch (error) {
         console.error('Auth check failed:', error);
         router.push('/login?redirect=/audit');
@@ -135,7 +176,31 @@ export default function AuditPage() {
     };
 
     checkAuth();
-  }, [router]);
+  }, [router, fetchHistory]);
+
+  // View audit session details
+  const handleViewSession = (session: AuditSession) => {
+    // For now, just show a snackbar - can be expanded to show a modal or navigate
+    setSnackbar({ open: true, message: `Viewing ${session.domain || session.totalUrls + ' URLs'} audit...` });
+    // TODO: Implement detailed view modal or page navigation
+  };
+
+  // Delete audit session
+  const handleDeleteSession = async (id: string) => {
+    try {
+      const response = await fetch(`/api/audit/history/${id}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (data.success) {
+        setAuditHistory(prev => prev.filter(s => s.id !== id));
+        setSnackbar({ open: true, message: 'Audit deleted successfully' });
+      }
+    } catch (error) {
+      console.error('Error deleting audit:', error);
+      setSnackbar({ open: true, message: 'Failed to delete audit' });
+    }
+  };
 
   // Show loading state
   if (loading) {
@@ -189,7 +254,32 @@ export default function AuditPage() {
 
         {/* Main Audit Component */}
         <Audit />
+
+        {/* Audit History Section */}
+        <Box sx={{ mt: 6 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+            <History color="action" />
+            <Typography variant="h5" fontWeight={600}>
+              Audit History
+            </Typography>
+          </Box>
+          <AuditHistoryTable
+            sessions={auditHistory}
+            loading={historyLoading}
+            onView={handleViewSession}
+            onDelete={handleDeleteSession}
+          />
+        </Box>
       </Container>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ open: false, message: '' })}
+        message={snackbar.message}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Box>
   );
 }

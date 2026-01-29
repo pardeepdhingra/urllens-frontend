@@ -240,7 +240,7 @@ export default function AboutPardeepPage() {
                   }}
                 >
                   <Chip
-                    label="14+ Years Experience"
+                    label="15+ Years Experience"
                     sx={{
                       bgcolor: "rgba(255,255,255,0.2)",
                       color: "white",
