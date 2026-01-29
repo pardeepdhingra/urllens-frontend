@@ -37,6 +37,12 @@ interface AuditSessionDetail {
   };
 }
 
+interface AuditRedirect {
+  from: string;
+  to: string;
+  status: number;
+}
+
 interface AuditResult {
   id: string;
   url: string;
@@ -45,6 +51,7 @@ interface AuditResult {
   scrapeScore: number | null;
   requiresJs: boolean;
   botProtections: string[];
+  redirects: AuditRedirect[];
   accessible: boolean;
   recommendation: string | null;
   blockedReason: string | null;
@@ -180,6 +187,7 @@ export async function GET(
         scrapeScore: r.scrape_score,
         requiresJs: r.requires_js,
         botProtections: r.bot_protections || [],
+        redirects: r.redirects || [],
         accessible: r.accessible,
         recommendation: r.recommendation,
         blockedReason: r.blocked_reason,

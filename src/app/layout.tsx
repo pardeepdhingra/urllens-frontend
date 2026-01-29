@@ -3,15 +3,8 @@
 // ============================================================================
 
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
 import { ThemeRegistry } from '@/components';
 import './globals.css';
-
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-});
 
 const siteUrl = 'https://galasar.com';
 const siteName = 'URL Lens';
@@ -328,7 +321,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en">
       <head>
         <script
           type="application/ld+json"

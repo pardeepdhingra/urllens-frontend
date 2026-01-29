@@ -58,6 +58,12 @@ interface AuditSession {
   bestScore?: number;
 }
 
+interface AuditRedirect {
+  from: string;
+  to: string;
+  status: number;
+}
+
 interface AuditSessionDetail {
   id: string;
   mode: 'batch' | 'domain';
@@ -75,6 +81,7 @@ interface AuditSessionDetail {
     scrapeScore: number | null;
     requiresJs: boolean;
     botProtections: string[];
+    redirects: AuditRedirect[];
     accessible: boolean;
     recommendation: string | null;
     blockedReason: string | null;
@@ -174,28 +181,48 @@ function convertToAuditResults(detail: AuditSessionDetail): {
   results: URLAuditResult[];
   summary: AuditSummary;
 } {
-  const results: URLAuditResult[] = detail.results.map((r) => ({
-    url: r.url,
-    status: r.statusCode || 0,
-    finalUrl: r.finalUrl || r.url,
-    accessible: r.accessible,
-    jsRequired: r.requiresJs,
-    botProtections: r.botProtections,
-    scrapeLikelihoodScore: r.scrapeScore || 0,
-    recommendation: (r.recommendation || 'Unknown') as URLAuditResult['recommendation'],
-    redirects: 0,
-    blockedReason: r.blockedReason || undefined,
-    contentType: r.contentType || undefined,
-    responseTimeMs: r.responseTimeMs || undefined,
-  }));
+  const results: URLAuditResult[] = detail.results.map((r) => {
+    // Reconstruct score breakdown from available data
+    const status = r.statusCode || 0;
+    const httpStatus = status >= 200 && status < 300 ? 40 : 0;
+    const jsRequired = r.requiresJs ? 0 : 20;
+    const htmlResponse = r.contentType?.includes('text/html') ? 15 : 0;
+    const botProtection = r.botProtections.length === 0 ? 15 : 0;
+    const redirects = r.redirects || [];
+    const redirectChain = redirects.length <= 2 ? 10 : 0;
+    const total = r.scrapeScore || httpStatus + jsRequired + htmlResponse + botProtection + redirectChain;
+
+    return {
+      url: r.url,
+      status,
+      finalUrl: r.finalUrl || r.url,
+      accessible: r.accessible,
+      jsRequired: r.requiresJs,
+      botProtections: r.botProtections,
+      scrapeLikelihoodScore: r.scrapeScore || 0,
+      recommendation: (r.recommendation || 'blocked') as URLAuditResult['recommendation'],
+      redirects,
+      blockedReason: r.blockedReason || undefined,
+      contentType: r.contentType || undefined,
+      responseTimeMs: r.responseTimeMs || undefined,
+      scoreBreakdown: {
+        httpStatus,
+        jsRequired,
+        htmlResponse,
+        botProtection,
+        redirectChain,
+        total,
+      },
+    };
+  });
 
   // Calculate recommendation breakdown
   const recommendationBreakdown = {
-    best_entry_point: results.filter((r) => r.recommendation === 'Best Entry Point').length,
-    good: results.filter((r) => r.recommendation === 'Good').length,
-    moderate: results.filter((r) => r.recommendation === 'Moderate').length,
-    challenging: results.filter((r) => r.recommendation === 'Challenging').length,
-    blocked: results.filter((r) => r.recommendation === 'Blocked').length,
+    best_entry_point: results.filter((r) => r.recommendation === 'best_entry_point').length,
+    good: results.filter((r) => r.recommendation === 'good').length,
+    moderate: results.filter((r) => r.recommendation === 'moderate').length,
+    challenging: results.filter((r) => r.recommendation === 'challenging').length,
+    blocked: results.filter((r) => r.recommendation === 'blocked').length,
   };
 
   const summary: AuditSummary = {
@@ -205,7 +232,7 @@ function convertToAuditResults(detail: AuditSessionDetail): {
     averageScore: detail.summary.avgScore,
     jsRequiredCount: detail.summary.jsRequiredCount,
     bestEntryPoints: results
-      .filter((r) => r.recommendation === 'Best Entry Point')
+      .filter((r) => r.recommendation === 'best_entry_point')
       .sort((a, b) => b.scrapeLikelihoodScore - a.scrapeLikelihoodScore)
       .slice(0, 5),
     recommendationBreakdown,
