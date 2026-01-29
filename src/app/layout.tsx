@@ -148,42 +148,6 @@ const organizationSchema = {
   },
 };
 
-// Person structured data for founder
-const personSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'Person',
-  '@id': `${siteUrl}/#founder`,
-  name: 'John Doe',
-  givenName: 'John',
-  familyName: 'Doe',
-  jobTitle: 'Founder & Developer',
-  image: `${siteUrl}/logo-512.png`,
-  email: 'contact@galasar.com',
-  url: `${siteUrl}/about`,
-  worksFor: {
-    '@type': 'Organization',
-    '@id': `${siteUrl}/#organization`,
-  },
-  sameAs: [
-    'https://www.linkedin.com/',
-    'https://medium.com/',
-    'https://github.com/',
-  ],
-  knowsAbout: [
-    'Web Scraping',
-    'SEO Optimization',
-    'Cloud Architecture',
-    'Full-Stack Development',
-    'AI/ML Applications',
-    'URL Analysis',
-    'Bot Detection',
-  ],
-  alumniOf: {
-    '@type': 'Organization',
-    name: 'Technology Industry',
-  },
-};
-
 // WebApplication structured data
 const webAppSchema = {
   '@context': 'https://schema.org',
@@ -281,12 +245,6 @@ const breadcrumbSchema = {
       name: 'Features',
       item: `${siteUrl}/features`,
     },
-    {
-      '@type': 'ListItem',
-      position: 3,
-      name: 'About',
-      item: `${siteUrl}/about`,
-    },
   ],
 };
 
@@ -313,7 +271,7 @@ const webSiteSchema = {
 };
 
 // Combined JSON-LD
-const jsonLd = [organizationSchema, personSchema, webAppSchema, webPageSchema, breadcrumbSchema, webSiteSchema];
+const jsonLd = [organizationSchema, webAppSchema, webPageSchema, breadcrumbSchema, webSiteSchema];
 
 export default function RootLayout({
   children,

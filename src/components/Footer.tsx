@@ -42,12 +42,6 @@ export default function Footer() {
             Terms of Service
           </Link>
           <Link
-            href="/about"
-            style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.875rem' }}
-          >
-            Contact
-          </Link>
-          <Link
             href="/features"
             style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.875rem' }}
           >
@@ -55,14 +49,7 @@ export default function Footer() {
           </Link>
         </Box>
         <Typography variant="body2" color="text.secondary" align="center">
-          © {new Date().getFullYear()} URL Lens. Built by{' '}
-          <Link
-            href="/about"
-            style={{ color: '#2563eb', textDecoration: 'none' }}
-          >
-            John Doe
-          </Link>
-          {' '}for web scraping enthusiasts.
+          © {new Date().getFullYear()} URL Lens. Built for web scraping enthusiasts.
         </Typography>
         <Typography
           variant="caption"
