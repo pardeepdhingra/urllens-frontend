@@ -25,7 +25,6 @@ import {
   Logout,
   Dashboard,
   AutoAwesome,
-  PersonOutline,
   Science,
 } from '@mui/icons-material';
 import Link from 'next/link';
@@ -113,13 +112,6 @@ export default function Header({ user }: HeaderProps) {
               >
                 Features
               </Button>
-              <Button
-                href="/about"
-                startIcon={<PersonOutline />}
-                color="inherit"
-              >
-                About
-              </Button>
             </>
           )}
 
@@ -184,10 +176,6 @@ export default function Header({ user }: HeaderProps) {
                       <AutoAwesome sx={{ mr: 1, fontSize: 20 }} />
                       Features
                     </MenuItem>
-                    <MenuItem onClick={() => handleNavigate('/about')}>
-                      <PersonOutline sx={{ mr: 1, fontSize: 20 }} />
-                      About
-                    </MenuItem>
                     <MenuItem onClick={() => handleNavigate('/dashboard')}>
                       <Dashboard sx={{ mr: 1, fontSize: 20 }} />
                       Dashboard
@@ -237,10 +225,6 @@ export default function Header({ user }: HeaderProps) {
                     <MenuItem onClick={() => handleNavigate('/features')}>
                       <AutoAwesome sx={{ mr: 1, fontSize: 20 }} />
                       Features
-                    </MenuItem>
-                    <MenuItem onClick={() => handleNavigate('/about')}>
-                      <PersonOutline sx={{ mr: 1, fontSize: 20 }} />
-                      About
                     </MenuItem>
                     <Divider />
                     <MenuItem onClick={() => handleNavigate('/login')}>
